@@ -26,6 +26,9 @@ export interface GoogleBookVolume {
     authors?: string[];
     pageCount?: number;
     imageLinks?: {
+      extraLarge?: string;
+      large?: string;
+      medium?: string;
       thumbnail?: string;
       smallThumbnail?: string;
     };
