@@ -1,21 +1,22 @@
 import { useBookStore } from "@/store/useBookStore";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { BookOpen, ChevronLeft, Play, Trash2 } from "lucide-react-native";
+import { ChevronLeft, Play, Settings, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import {
+    Alert,
     Dimensions,
     Pressable,
-    ScrollView,
     Text,
-    TextInput,
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const COVER_HEIGHT = SCREEN_HEIGHT * 0.6;
 
 export default function BookDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,22 +24,21 @@ export default function BookDetailScreen() {
     const insets = useSafeAreaInsets();
 
     const book = useBookStore((state) => state.getBookById(id || ""));
-    const updateProgress = useBookStore((state) => state.updateProgress);
     const updateStatus = useBookStore((state) => state.updateStatus);
     const deleteBook = useBookStore((state) => state.deleteBook);
 
-    const [showPageInput, setShowPageInput] = useState(false);
-    const [pageInput, setPageInput] = useState("");
+    const [showStatusOptions, setShowStatusOptions] = useState(false);
 
     if (!book) {
         return (
-            <View className="flex-1 bg-neutral-900 items-center justify-center">
+            <View className="flex-1 bg-black items-center justify-center">
                 <Text className="text-white text-lg">Book not found</Text>
             </View>
         );
     }
 
     const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
+    const pagesLeft = book.totalPages - book.currentPage;
 
     const handleBack = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -47,45 +47,66 @@ export default function BookDetailScreen() {
 
     const handleStartReading = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        updateStatus(book.id, "reading");
+        if (book.status !== "reading") {
+            updateStatus(book.id, "reading");
+        }
         router.push(`/session/${book.id}`);
     };
 
-    const handleUpdatePage = () => {
-        const newPage = parseInt(pageInput, 10);
-        if (!isNaN(newPage) && newPage >= 0 && newPage <= book.totalPages) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            updateProgress(book.id, newPage);
-            setShowPageInput(false);
-            setPageInput("");
-        } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        }
+    const handleEditStatus = () => {
+        Haptics.selectionAsync();
+        setShowStatusOptions(!showStatusOptions);
+    };
+
+    const handleSetStatus = (status: "want-to-read" | "reading" | "finished") => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        updateStatus(book.id, status);
+        setShowStatusOptions(false);
     };
 
     const handleDelete = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        deleteBook(book.id);
-        router.back();
+        Alert.alert(
+            "Delete Book",
+            `Are you sure you want to remove "${book.title}" from your library?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        deleteBook(book.id);
+                        router.back();
+                    },
+                },
+            ]
+        );
     };
 
     return (
-        <View className="flex-1 bg-neutral-900">
-            {/* Background Cover */}
-            <View className="absolute inset-0">
+        <View className="flex-1 bg-black">
+            {/* Background Cover Image */}
+            <View className="absolute top-0 left-0 right-0" style={{ height: COVER_HEIGHT }}>
                 {book.coverUrl ? (
                     <Image
                         source={{ uri: book.coverUrl }}
-                        style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+                        style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
                         contentFit="cover"
-                        blurRadius={20}
                     />
                 ) : (
-                    <View className="w-full h-full bg-neutral-800" />
+                    // Dark abstract gradient fallback for missing covers
+                    <LinearGradient
+                        colors={["#374151", "#1f2937", "#111827"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
+                    />
                 )}
+                
+                {/* Gradient overlay: transparent to black */}
                 <LinearGradient
-                    colors={["transparent", "rgba(0,0,0,0.7)", "rgba(0,0,0,0.95)"]}
-                    locations={[0, 0.4, 1]}
+                    colors={["transparent", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.9)", "#000000"]}
+                    locations={[0, 0.4, 0.7, 1]}
                     style={{
                         position: "absolute",
                         top: 0,
@@ -96,127 +117,125 @@ export default function BookDetailScreen() {
                 />
             </View>
 
-            {/* Content */}
-            <ScrollView
-                className="flex-1"
-                contentContainerStyle={{
-                    paddingTop: insets.top,
-                    paddingBottom: insets.bottom + 20,
-                }}
+            {/* Floating Back Button with Blur */}
+            <View
+                className="absolute z-10"
+                style={{ top: insets.top + 8, left: 16 }}
             >
-                {/* Header */}
-                <View className="flex-row items-center justify-between px-4 py-4">
-                    <Pressable
-                        onPress={handleBack}
-                        className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
+                <Pressable
+                    onPress={handleBack}
+                    className="overflow-hidden rounded-full active:scale-90"
+                >
+                    <BlurView
+                        intensity={50}
+                        tint="dark"
+                        className="w-11 h-11 items-center justify-center"
                     >
                         <ChevronLeft size={24} color="#ffffff" />
-                    </Pressable>
-                    <Pressable
-                        onPress={handleDelete}
-                        className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
-                    >
-                        <Trash2 size={20} color="#ef4444" />
-                    </Pressable>
-                </View>
+                    </BlurView>
+                </Pressable>
+            </View>
 
-                {/* Cover */}
-                <View className="items-center mt-8 mb-8">
-                    <View className="w-48 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
-                        {book.coverUrl ? (
-                            <Image
-                                source={{ uri: book.coverUrl }}
-                                style={{ width: "100%", height: "100%" }}
-                                contentFit="cover"
-                            />
-                        ) : (
-                            <View className="w-full h-full bg-neutral-700 items-center justify-center">
-                                <BookOpen size={48} color="#a3a3a3" />
-                            </View>
-                        )}
-                    </View>
-                </View>
-
-                {/* Book Info */}
-                <View className="px-6">
-                    <Text className="text-3xl font-bold text-white text-center mb-2">
+            {/* Content Over Gradient */}
+            <View className="flex-1 justify-end">
+                {/* Book Info Section */}
+                <View className="px-6 pb-6">
+                    {/* Title */}
+                    <Text className="text-4xl font-bold text-white mb-2" numberOfLines={3}>
                         {book.title}
                     </Text>
-                    <Text className="text-lg text-white/70 text-center mb-8">
+                    
+                    {/* Author */}
+                    <Text className="text-sm font-semibold uppercase tracking-widest text-neutral-400 mb-6">
                         {book.author}
                     </Text>
 
-                    {/* Progress */}
-                    <View className="bg-white/10 rounded-2xl p-4 mb-6">
-                        <View className="flex-row justify-between mb-2">
-                            <Text className="text-xs font-bold uppercase tracking-widest text-white/50">
-                                Progress
-                            </Text>
-                            <Text className="text-sm font-semibold text-white">
-                                {Math.round(progress)}%
+                    {/* Stats Row */}
+                    <View className="flex-row items-center gap-4 mb-6">
+                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                            <Text className="text-base font-semibold text-white">
+                                {Math.round(progress)}% Complete
                             </Text>
                         </View>
-                        <View className="h-3 bg-white/20 rounded-full overflow-hidden">
-                            <View
-                                className="h-full bg-white rounded-full"
-                                style={{ width: `${progress}%` }}
-                            />
+                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                            <Text className="text-base font-semibold text-white">
+                                {pagesLeft} Pages Left
+                            </Text>
                         </View>
-                        <Text className="text-sm text-white/50 text-center mt-2">
-                            {book.currentPage} of {book.totalPages} pages
-                        </Text>
                     </View>
+                </View>
 
-                    {/* Update Page */}
-                    {showPageInput ? (
-                        <View className="bg-white/10 rounded-2xl p-4 mb-4">
-                            <Text className="text-xs font-bold uppercase tracking-widest text-white/50 mb-3">
-                                Update Current Page
+                {/* Bottom Sheet Style White Container */}
+                <View className="bg-white rounded-t-[32px] px-6 pt-6" style={{ paddingBottom: insets.bottom + 16 }}>
+                    {/* Status Options (when expanded) */}
+                    {showStatusOptions && (
+                        <View className="mb-4">
+                            <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                                Set Status
                             </Text>
-                            <View className="flex-row items-center">
-                                <TextInput
-                                    className="flex-1 bg-white/20 rounded-xl px-4 py-3 text-white text-base"
-                                    placeholder={`0 - ${book.totalPages}`}
-                                    placeholderTextColor="rgba(255,255,255,0.4)"
-                                    keyboardType="number-pad"
-                                    value={pageInput}
-                                    onChangeText={setPageInput}
-                                    autoFocus
-                                />
+                            <View className="flex-row gap-2">
                                 <Pressable
-                                    onPress={handleUpdatePage}
-                                    className="ml-3 bg-white px-6 py-3 rounded-xl active:scale-95"
+                                    onPress={() => handleSetStatus("want-to-read")}
+                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "want-to-read" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
                                 >
-                                    <Text className="font-semibold text-neutral-900">Save</Text>
+                                    <Text className={`text-sm font-semibold ${book.status === "want-to-read" ? "text-white" : "text-neutral-700"}`}>
+                                        Want to Read
+                                    </Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => handleSetStatus("reading")}
+                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "reading" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
+                                >
+                                    <Text className={`text-sm font-semibold ${book.status === "reading" ? "text-white" : "text-neutral-700"}`}>
+                                        Reading
+                                    </Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => handleSetStatus("finished")}
+                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "finished" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
+                                >
+                                    <Text className={`text-sm font-semibold ${book.status === "finished" ? "text-white" : "text-neutral-700"}`}>
+                                        Finished
+                                    </Text>
                                 </Pressable>
                             </View>
                         </View>
-                    ) : (
-                        <Pressable
-                            onPress={() => {
-                                Haptics.selectionAsync();
-                                setShowPageInput(true);
-                            }}
-                            className="bg-white/10 rounded-2xl p-4 mb-4 active:bg-white/15"
-                        >
-                            <Text className="text-base font-semibold text-white text-center">
-                                Update Page Number
-                            </Text>
-                        </Pressable>
                     )}
 
-                    {/* Start Session Button */}
+                    {/* Primary Action - Start Reading Session */}
                     <Pressable
                         onPress={handleStartReading}
-                        className="bg-white rounded-2xl py-4 flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-xl shadow-black/30"
+                        className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-3"
                     >
-                        <Play size={24} color="#171717" fill="#171717" />
-                        <Text className="text-lg font-bold text-neutral-900">
+                        <Play size={22} color="#ffffff" fill="#ffffff" />
+                        <Text className="text-lg font-bold text-white">
                             Start Reading Session
                         </Text>
                     </Pressable>
+
+                    {/* Secondary Action - Edit Status */}
+                    <Pressable
+                        onPress={handleEditStatus}
+                        className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] mb-4"
+                    >
+                        <Settings size={20} color="#525252" />
+                        <Text className="text-base font-semibold text-neutral-600">
+                            Edit Status
+                        </Text>
+                    </Pressable>
+
+                    {/* Delete Book */}
+                    <Pressable
+                        onPress={handleDelete}
+                        className="flex-row items-center justify-center gap-2 py-2 active:opacity-70"
+                    >
+                        <Trash2 size={16} color="#ef4444" />
+                        <Text className="text-sm font-medium text-red-500">
+                            Delete Book
+                        </Text>
+                    </Pressable>
                 </View>
-            </ScrollView>
+            </View>
         </View>
     );
 }
