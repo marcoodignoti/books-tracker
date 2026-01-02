@@ -227,16 +227,20 @@ export default function BookDetailScreen() {
                             </Text>
                             {sortedSessions.length > 0 ? (
                                 <View>
-                                    {sortedSessions.slice(0, 5).map((session, index) => (
-                                        <View
-                                            key={session.id}
-                                            className={`py-3 ${index < Math.min(sortedSessions.length, 5) - 1 ? 'border-b border-neutral-100' : ''}`}
-                                        >
-                                            <Text className="text-sm text-neutral-600">
-                                                {formatSessionDate(session.date)} • {formatDuration(session.durationSeconds)} • +{session.endPage - session.startPage} pages
-                                            </Text>
-                                        </View>
-                                    ))}
+                                    {sortedSessions.slice(0, 5).map((session, index) => {
+                                        const pagesRead = session.endPage - session.startPage;
+                                        const pagesDisplay = pagesRead >= 0 ? `+${pagesRead}` : `${pagesRead}`;
+                                        return (
+                                            <View
+                                                key={session.id}
+                                                className={`py-3 ${index < Math.min(sortedSessions.length, 5) - 1 ? 'border-b border-neutral-100' : ''}`}
+                                            >
+                                                <Text className="text-sm text-neutral-600">
+                                                    {formatSessionDate(session.date)} • {formatDuration(session.durationSeconds)} • {pagesDisplay} pages
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
                             ) : (
                                 <Text className="text-sm text-neutral-400 py-3">
