@@ -302,7 +302,7 @@ export default function SearchScreen() {
                                 <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
                                     Description
                                 </Text>
-                                <ScrollView className="max-h-32" showsVerticalScrollIndicator>
+                                <ScrollView className="max-h-32" showsVerticalScrollIndicator={true}>
                                     <Text className="text-sm text-neutral-600 leading-5">
                                         {selectedBook.description || "No description available."}
                                     </Text>
