@@ -1,12 +1,17 @@
-import { Book, BookStatus } from '@/types/book';
+import { Book, BookStatus, ReadingSession } from '@/types/book';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+interface SessionData {
+    durationSeconds: number;
+    pagesRead: number;
+}
+
 interface BookStore {
     books: Book[];
-    addBook: (book: Omit<Book, 'addedAt'>) => void;
-    updateProgress: (id: string, currentPage: number) => void;
+    addBook: (book: Omit<Book, 'addedAt' | 'sessions'>) => void;
+    updateProgress: (id: string, currentPage: number, sessionData?: SessionData) => void;
     updateStatus: (id: string, status: BookStatus) => void;
     deleteBook: (id: string) => void;
     getBookById: (id: string) => Book | undefined;
@@ -25,22 +30,36 @@ export const useBookStore = create<BookStore>()(
                         {
                             ...book,
                             addedAt: Date.now(),
+                            sessions: [],
                         },
                     ],
                 }));
             },
 
-            updateProgress: (id, currentPage) => {
+            updateProgress: (id, currentPage, sessionData) => {
                 set((state) => ({
-                    books: state.books.map((book) =>
-                        book.id === id
-                            ? {
-                                ...book,
-                                currentPage,
-                                status: currentPage >= book.totalPages ? 'finished' : 'reading',
-                            }
-                            : book
-                    ),
+                    books: state.books.map((book) => {
+                        if (book.id !== id) return book;
+                        
+                        const updatedBook: Book = {
+                            ...book,
+                            currentPage,
+                            status: currentPage >= book.totalPages ? 'finished' : 'reading',
+                        };
+                        
+                        // Add session if session data is provided
+                        if (sessionData) {
+                            const newSession: ReadingSession = {
+                                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                date: new Date().toISOString(),
+                                durationSeconds: sessionData.durationSeconds,
+                                pagesRead: sessionData.pagesRead,
+                            };
+                            updatedBook.sessions = [...(book.sessions || []), newSession];
+                        }
+                        
+                        return updatedBook;
+                    }),
                 }));
             },
 

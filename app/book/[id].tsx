@@ -10,6 +10,7 @@ import {
     Alert,
     Dimensions,
     Pressable,
+    ScrollView,
     Text,
     View,
 } from "react-native";
@@ -39,6 +40,23 @@ export default function BookDetailScreen() {
 
     const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
     const pagesLeft = book.totalPages - book.currentPage;
+
+    // Format session date for display (e.g., "Jan 02")
+    const formatSessionDate = (isoDate: string): string => {
+        const date = new Date(isoDate);
+        return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    };
+
+    // Format session duration in minutes
+    const formatDuration = (seconds: number): string => {
+        const mins = Math.round(seconds / 60);
+        return `${mins} min${mins !== 1 ? 's' : ''}`;
+    };
+
+    // Get sessions sorted by date (most recent first)
+    const sortedSessions = [...(book.sessions || [])].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     const handleBack = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -165,74 +183,101 @@ export default function BookDetailScreen() {
                 </View>
 
                 {/* Bottom Sheet Style White Container */}
-                <View className="bg-white rounded-t-[32px] px-6 pt-6" style={{ paddingBottom: insets.bottom + 16 }}>
-                    {/* Status Options (when expanded) */}
-                    {showStatusOptions && (
+                <View className="bg-white rounded-t-[32px] px-6 pt-6" style={{ paddingBottom: insets.bottom + 16, maxHeight: SCREEN_HEIGHT * 0.55 }}>
+                    <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                        {/* Status Options (when expanded) */}
+                        {showStatusOptions && (
+                            <View className="mb-4">
+                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                                    Set Status
+                                </Text>
+                                <View className="flex-row gap-2">
+                                    <Pressable
+                                        onPress={() => handleSetStatus("want-to-read")}
+                                        className={`flex-1 py-3 rounded-xl items-center ${book.status === "want-to-read" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
+                                    >
+                                        <Text className={`text-sm font-semibold ${book.status === "want-to-read" ? "text-white" : "text-neutral-700"}`}>
+                                            Want to Read
+                                        </Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => handleSetStatus("reading")}
+                                        className={`flex-1 py-3 rounded-xl items-center ${book.status === "reading" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
+                                    >
+                                        <Text className={`text-sm font-semibold ${book.status === "reading" ? "text-white" : "text-neutral-700"}`}>
+                                            Reading
+                                        </Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => handleSetStatus("finished")}
+                                        className={`flex-1 py-3 rounded-xl items-center ${book.status === "finished" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
+                                    >
+                                        <Text className={`text-sm font-semibold ${book.status === "finished" ? "text-white" : "text-neutral-700"}`}>
+                                            Finished
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Reading History Section */}
                         <View className="mb-4">
                             <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
-                                Set Status
+                                Reading History
                             </Text>
-                            <View className="flex-row gap-2">
-                                <Pressable
-                                    onPress={() => handleSetStatus("want-to-read")}
-                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "want-to-read" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
-                                >
-                                    <Text className={`text-sm font-semibold ${book.status === "want-to-read" ? "text-white" : "text-neutral-700"}`}>
-                                        Want to Read
-                                    </Text>
-                                </Pressable>
-                                <Pressable
-                                    onPress={() => handleSetStatus("reading")}
-                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "reading" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
-                                >
-                                    <Text className={`text-sm font-semibold ${book.status === "reading" ? "text-white" : "text-neutral-700"}`}>
-                                        Reading
-                                    </Text>
-                                </Pressable>
-                                <Pressable
-                                    onPress={() => handleSetStatus("finished")}
-                                    className={`flex-1 py-3 rounded-xl items-center ${book.status === "finished" ? "bg-neutral-900" : "bg-neutral-100"} active:scale-95`}
-                                >
-                                    <Text className={`text-sm font-semibold ${book.status === "finished" ? "text-white" : "text-neutral-700"}`}>
-                                        Finished
-                                    </Text>
-                                </Pressable>
-                            </View>
+                            {sortedSessions.length > 0 ? (
+                                <View>
+                                    {sortedSessions.slice(0, 5).map((session, index) => (
+                                        <View
+                                            key={session.id}
+                                            className={`py-3 ${index < Math.min(sortedSessions.length, 5) - 1 ? 'border-b border-neutral-100' : ''}`}
+                                        >
+                                            <Text className="text-sm text-neutral-600">
+                                                {formatSessionDate(session.date)} • {formatDuration(session.durationSeconds)} • +{session.pagesRead} pages
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            ) : (
+                                <Text className="text-sm text-neutral-400 py-3">
+                                    No sessions yet. Start reading!
+                                </Text>
+                            )}
                         </View>
-                    )}
 
-                    {/* Primary Action - Start Reading Session */}
-                    <Pressable
-                        onPress={handleStartReading}
-                        className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-3"
-                    >
-                        <Play size={22} color="#ffffff" fill="#ffffff" />
-                        <Text className="text-lg font-bold text-white">
-                            Start Reading Session
-                        </Text>
-                    </Pressable>
+                        {/* Primary Action - Start Reading Session */}
+                        <Pressable
+                            onPress={handleStartReading}
+                            className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-3"
+                        >
+                            <Play size={22} color="#ffffff" fill="#ffffff" />
+                            <Text className="text-lg font-bold text-white">
+                                Start Reading Session
+                            </Text>
+                        </Pressable>
 
-                    {/* Secondary Action - Edit Status */}
-                    <Pressable
-                        onPress={handleEditStatus}
-                        className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] mb-4"
-                    >
-                        <Settings size={20} color="#525252" />
-                        <Text className="text-base font-semibold text-neutral-600">
-                            Edit Status
-                        </Text>
-                    </Pressable>
+                        {/* Secondary Action - Edit Status */}
+                        <Pressable
+                            onPress={handleEditStatus}
+                            className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] mb-4"
+                        >
+                            <Settings size={20} color="#525252" />
+                            <Text className="text-base font-semibold text-neutral-600">
+                                Edit Status
+                            </Text>
+                        </Pressable>
 
-                    {/* Delete Book */}
-                    <Pressable
-                        onPress={handleDelete}
-                        className="flex-row items-center justify-center gap-2 py-2 active:opacity-70"
-                    >
-                        <Trash2 size={16} color="#ef4444" />
-                        <Text className="text-sm font-medium text-red-500">
-                            Delete Book
-                        </Text>
-                    </Pressable>
+                        {/* Delete Book */}
+                        <Pressable
+                            onPress={handleDelete}
+                            className="flex-row items-center justify-center gap-2 py-2 active:opacity-70"
+                        >
+                            <Trash2 size={16} color="#ef4444" />
+                            <Text className="text-sm font-medium text-red-500">
+                                Delete Book
+                            </Text>
+                        </Pressable>
+                    </ScrollView>
                 </View>
             </View>
         </View>
