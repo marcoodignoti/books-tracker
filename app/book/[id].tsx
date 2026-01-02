@@ -102,7 +102,6 @@ export default function BookDetailScreen() {
                         style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
                     />
                 )}
-                
                 {/* Gradient overlay: transparent to black */}
                 <LinearGradient
                     colors={["transparent", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.9)", "#000000"]}
