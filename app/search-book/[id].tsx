@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { BookOpen, Check, ChevronLeft, Plus } from "lucide-react-native";
+import { BookOpen, Check, ChevronLeft, Plus, Star } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -34,7 +34,11 @@ export default function SearchBookPreviewScreen() {
 
     useEffect(() => {
         const fetchBookDetails = async () => {
-            if (!id) return;
+            if (!id || typeof id !== "string" || id.trim() === "") {
+                setError("Invalid book ID");
+                setIsLoading(false);
+                return;
+            }
 
             try {
                 setIsLoading(true);
@@ -75,9 +79,19 @@ export default function SearchBookPreviewScreen() {
         return books.some((book) => book.id === id);
     };
 
-    // Helper function to strip HTML tags from description
+    // Helper function to strip HTML tags and decode entities from description
     const stripHtml = (html: string) => {
-        return html.replace(/<[^>]*>/g, "");
+        // Remove HTML tags
+        let text = html.replace(/<[^>]*>/g, "");
+        // Decode common HTML entities
+        text = text
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, " ");
+        return text;
     };
 
     if (isLoading) {
@@ -197,9 +211,10 @@ export default function SearchBookPreviewScreen() {
                             </View>
                         )}
                         {volumeInfo.averageRating && (
-                            <View className="bg-white/10 px-4 py-2 rounded-full">
+                            <View className="bg-white/10 px-4 py-2 rounded-full flex-row items-center gap-1">
+                                <Star size={16} color="#ffffff" fill="#ffffff" />
                                 <Text className="text-base font-semibold text-white">
-                                    ⭐ {volumeInfo.averageRating.toFixed(1)}
+                                    {volumeInfo.averageRating.toFixed(1)}
                                 </Text>
                             </View>
                         )}
