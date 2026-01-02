@@ -9,6 +9,7 @@ import { BookOpen, Check, ChevronRight, Search, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
+    Dimensions,
     Modal,
     Pressable,
     ScrollView,
@@ -239,7 +240,10 @@ export default function SearchScreen() {
                     {selectedBook && (
                         <View
                             className="bg-white rounded-t-3xl p-6"
-                            style={{ paddingBottom: insets.bottom + 24 }}
+                            style={{ 
+                                maxHeight: Dimensions.get('window').height * 0.75,
+                                paddingBottom: insets.bottom + 24 
+                            }}
                         >
                             {/* Header */}
                             <View className="flex-row justify-between items-center mb-4">
@@ -254,60 +258,64 @@ export default function SearchScreen() {
                                 </Pressable>
                             </View>
 
-                            {/* Book Info */}
-                            <View className="flex-row mb-4">
-                                {/* Cover */}
-                                <View className="w-24 h-36 rounded-xl overflow-hidden shadow-xl shadow-black/20">
-                                    {selectedBook.coverUrl ? (
-                                        <Image
-                                            source={{ uri: selectedBook.coverUrl }}
-                                            style={{ width: "100%", height: "100%" }}
-                                            contentFit="cover"
-                                        />
-                                    ) : (
-                                        <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                                            <BookOpen size={32} color="#a3a3a3" />
-                                        </View>
-                                    )}
-                                </View>
-
-                                {/* Details */}
-                                <View className="flex-1 ml-4 justify-center">
-                                    <Text className="text-lg font-bold text-neutral-900" numberOfLines={3}>
-                                        {selectedBook.title}
-                                    </Text>
-                                    <Text className="text-sm text-neutral-500 mt-1" numberOfLines={1}>
-                                        {selectedBook.author}
-                                    </Text>
-                                    {selectedVolume?.volumeInfo.publishedDate && (
-                                        <Text className="text-xs text-neutral-400 mt-1">
-                                            {selectedVolume.volumeInfo.publishedDate.substring(0, 4)}
-                                        </Text>
-                                    )}
-                                    {/* Page Count Badge */}
-                                    {selectedBook.totalPages > 0 && (
-                                        <View className="flex-row mt-3">
-                                            <View className="bg-neutral-100 rounded-full px-3 py-1">
-                                                <Text className="text-xs font-medium text-neutral-600">
-                                                    {selectedBook.totalPages} pages
-                                                </Text>
+                            {/* Scrollable Content */}
+                            <ScrollView 
+                                showsVerticalScrollIndicator={true}
+                                contentContainerStyle={{ flexGrow: 1 }}
+                            >
+                                {/* Book Info */}
+                                <View className="flex-row mb-4">
+                                    {/* Cover */}
+                                    <View className="w-24 h-36 rounded-xl overflow-hidden shadow-xl shadow-black/20">
+                                        {selectedBook.coverUrl ? (
+                                            <Image
+                                                source={{ uri: selectedBook.coverUrl }}
+                                                style={{ width: "100%", height: "100%" }}
+                                                contentFit="cover"
+                                            />
+                                        ) : (
+                                            <View className="w-full h-full bg-neutral-200 items-center justify-center">
+                                                <BookOpen size={32} color="#a3a3a3" />
                                             </View>
-                                        </View>
-                                    )}
-                                </View>
-                            </View>
+                                        )}
+                                    </View>
 
-                            {/* Description */}
-                            <View className="mb-6">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
-                                    Description
-                                </Text>
-                                <ScrollView className="max-h-32" showsVerticalScrollIndicator={true}>
+                                    {/* Details */}
+                                    <View className="flex-1 ml-4 justify-center">
+                                        <Text className="text-lg font-bold text-neutral-900" numberOfLines={3}>
+                                            {selectedBook.title}
+                                        </Text>
+                                        <Text className="text-sm text-neutral-500 mt-1" numberOfLines={1}>
+                                            {selectedBook.author}
+                                        </Text>
+                                        {selectedVolume?.volumeInfo.publishedDate && (
+                                            <Text className="text-xs text-neutral-400 mt-1">
+                                                {selectedVolume.volumeInfo.publishedDate.substring(0, 4)}
+                                            </Text>
+                                        )}
+                                        {/* Page Count Badge */}
+                                        {selectedBook.totalPages > 0 && (
+                                            <View className="flex-row mt-3">
+                                                <View className="bg-neutral-100 rounded-full px-3 py-1">
+                                                    <Text className="text-xs font-medium text-neutral-600">
+                                                        {selectedBook.totalPages} pages
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+
+                                {/* Description */}
+                                <View className="mb-6">
+                                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
+                                        Description
+                                    </Text>
                                     <Text className="text-sm text-neutral-600 leading-5">
                                         {selectedBook.description || "No description available."}
                                     </Text>
-                                </ScrollView>
-                            </View>
+                                </View>
+                            </ScrollView>
 
                             {/* Actions */}
                             {isBookInLibrary(selectedBook.id) ? (
