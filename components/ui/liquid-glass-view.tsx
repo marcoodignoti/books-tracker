@@ -75,13 +75,13 @@ export function LiquidGlassView({
   });
 
   // Get gradient colors based on variant
-  const getGradientColors = (): readonly [string, string, ...string[]] => {
+  const getGradientColors = (): [string, string, string] => {
     if (tintColor) {
       return [
         `${tintColor}20`,
         `${tintColor}10`,
         `${tintColor}05`,
-      ] as const;
+      ];
     }
 
     switch (variant) {
@@ -125,7 +125,7 @@ export function LiquidGlassView({
   };
 
   // Get border colors for the highlight effect
-  const getBorderGradient = (): readonly [string, string, ...string[]] => {
+  const getBorderGradient = (): [string, string, string, string] => {
     return [
       "rgba(255, 255, 255, 0.5)",
       "rgba(255, 255, 255, 0.2)",
@@ -140,7 +140,7 @@ export function LiquidGlassView({
         styles.container,
         {
           borderRadius,
-          shadowColor: variant === "light" ? "#000" : "#000",
+          shadowColor: "#000",
           shadowOpacity: variant === "dark" ? 0.4 : 0.15,
         },
         style,
