@@ -89,10 +89,10 @@ export default function SearchScreen() {
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             {/* Header */}
             <View className="flex-row items-center px-4 py-3 border-b border-neutral-100">
-                <View className="flex-1 flex-row items-center bg-neutral-100 rounded-xl px-4 py-3">
+                <View className="flex-1 flex-row items-center bg-neutral-100 rounded-xl px-4 py-2">
                     <Search size={20} color="#a3a3a3" strokeWidth={2} />
                     <TextInput
-                        className="flex-1 ml-3 text-base text-neutral-900"
+                        className="flex-1 ml-3 text-base text-neutral-900 py-1"
                         placeholder="Search for books..."
                         placeholderTextColor="#a3a3a3"
                         value={query}
@@ -102,6 +102,7 @@ export default function SearchScreen() {
                         autoFocus
                         autoCapitalize="none"
                         autoCorrect={false}
+                        style={{ minHeight: 24 }}
                     />
                     {query.length > 0 && (
                         <Pressable onPress={() => setQuery("")}>
