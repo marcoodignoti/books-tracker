@@ -72,5 +72,6 @@ export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'added
         totalPages: volumeInfo.pageCount || 0,
         currentPage: 0,
         status: 'want-to-read',
+        description: volumeInfo.description,
     };
 }

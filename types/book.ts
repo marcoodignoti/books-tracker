@@ -18,6 +18,7 @@ export interface Book {
   status: BookStatus;
   addedAt: number;
   sessions: ReadingSession[];
+  description?: string;
 }
 
 export interface GoogleBookVolume {
@@ -26,6 +27,8 @@ export interface GoogleBookVolume {
     title: string;
     authors?: string[];
     pageCount?: number;
+    description?: string;
+    publishedDate?: string;
     imageLinks?: {
       extraLarge?: string;
       large?: string;
