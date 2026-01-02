@@ -66,7 +66,16 @@ export default function SessionScreen() {
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [pageInput, setPageInput] = useState("");
     const [inputError, setInputError] = useState("");
+    const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const sessionStartTimeRef = useRef<number | null>(null);
+
+    // Calculate elapsed time from session start
+    const getElapsedSeconds = (): number => {
+        return sessionStartTimeRef.current 
+            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+            : 0;
+    };
 
     useEffect(() => {
         if (isRunning && timerSeconds > 0) {
@@ -75,6 +84,7 @@ export default function SessionScreen() {
                     if (prev <= 1) {
                         setIsRunning(false);
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        setSessionElapsedSeconds(getElapsedSeconds());
                         // Show completion modal when timer reaches 0
                         setPageInput(book?.currentPage?.toString() || "0");
                         setShowCompletionModal(true);
@@ -117,6 +127,7 @@ export default function SessionScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         setPhase("timer");
         setIsRunning(true);
+        sessionStartTimeRef.current = Date.now();
     };
 
     const handlePlayPause = () => {
@@ -140,6 +151,7 @@ export default function SessionScreen() {
             clearInterval(timerRef.current);
         }
         setIsRunning(false);
+        setSessionElapsedSeconds(getElapsedSeconds());
         // Pre-fill with current page and show modal
         setPageInput(book?.currentPage?.toString() || "0");
         setShowCompletionModal(true);
@@ -162,8 +174,14 @@ export default function SessionScreen() {
             return;
         }
 
-        // Update progress in store
-        updateProgress(book.id, newPage);
+        // Calculate pages read (minimum 0 to avoid negative values for backward navigation)
+        const pagesRead = Math.max(0, newPage - book.currentPage);
+
+        // Update progress in store with session data
+        updateProgress(book.id, newPage, {
+            durationSeconds: sessionElapsedSeconds,
+            pagesRead,
+        });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);
         router.back();
@@ -367,13 +385,13 @@ export default function SessionScreen() {
                                 Session Complete
                             </Text>
                             <Text className="text-base text-neutral-500 text-center mb-6">
-                                Great reading session! Update your progress below.
+                                You read for {Math.round(sessionElapsedSeconds / 60)} minutes.
                             </Text>
 
                             {/* Page Input */}
                             <View className="mb-6">
                                 <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">
-                                    Current Page Number
+                                    What page are you on now?
                                 </Text>
                                 <TextInput
                                     className="bg-neutral-100 rounded-2xl px-6 py-4 text-center text-3xl font-bold text-neutral-900"
@@ -400,7 +418,7 @@ export default function SessionScreen() {
                             {/* Update Button */}
                             <Pressable
                                 onPress={handleUpdateProgress}
-                                className="bg-neutral-900 py-4 rounded-2xl items-center justify-center active:scale-[0.98] shadow-lg shadow-black/20"
+                                className="bg-neutral-900 py-4 rounded-full items-center justify-center active:scale-[0.98] shadow-lg shadow-black/20"
                             >
                                 <Text className="text-lg font-bold text-white">
                                     Update Progress

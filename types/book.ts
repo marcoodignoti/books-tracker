@@ -1,5 +1,12 @@
 export type BookStatus = 'want-to-read' | 'reading' | 'finished';
 
+export interface ReadingSession {
+  id: string;
+  date: string; // ISO string
+  durationSeconds: number;
+  pagesRead: number;
+}
+
 export interface Book {
   id: string;
   title: string;
@@ -9,6 +16,7 @@ export interface Book {
   currentPage: number;
   status: BookStatus;
   addedAt: number;
+  sessions: ReadingSession[];
 }
 
 export interface GoogleBookVolume {

@@ -130,7 +130,7 @@ export default function HomeScreen() {
     const insets = useSafeAreaInsets();
     const books = useBookStore((state) => state.books);
 
-    const currentlyReading = books.find((b) => b.status === "reading");
+    const currentlyReading = books.filter((b) => b.status === "reading");
     const wantToRead = books.filter((b) => b.status === "want-to-read");
     const finished = books.filter((b) => b.status === "finished");
 
@@ -164,8 +164,26 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Currently Reading Hero */}
-                {currentlyReading && (
-                    <BookCard book={currentlyReading} isHero />
+                {currentlyReading.length > 0 && (
+                    <BookCard book={currentlyReading[0]} isHero />
+                )}
+
+                {/* Additional Currently Reading Books (if more than one) */}
+                {currentlyReading.length > 1 && (
+                    <View className="mb-6">
+                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 px-4 mb-3">
+                            Also Reading
+                        </Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
+                        >
+                            {currentlyReading.slice(1).map((book) => (
+                                <BookCard key={book.id} book={book} />
+                            ))}
+                        </ScrollView>
+                    </View>
                 )}
 
                 {/* Want to Read Section */}

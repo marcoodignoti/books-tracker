@@ -22,7 +22,7 @@ export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
     }
 }
 
-export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt'> {
+export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions'> {
     const { volumeInfo } = volume;
 
     // Get the best available cover URL and use HTTPS
