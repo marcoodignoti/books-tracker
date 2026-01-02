@@ -43,6 +43,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9d56434c-e813-457e-aafa-babc168f7dcb"
+      }
+    },
+    "owner": "purplerainmd",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9d56434c-e813-457e-aafa-babc168f7dcb"
     }
   }
 }
