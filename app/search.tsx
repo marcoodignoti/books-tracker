@@ -240,34 +240,37 @@ export default function SearchScreen() {
                     {/* Modal Content - Bottom Sheet Style */}
                     {selectedBook && (
                         <View
-                            className="bg-white rounded-t-3xl p-6"
+                            className="bg-white rounded-t-3xl"
                             style={{ 
                                 maxHeight: Dimensions.get('window').height * 0.75,
                                 paddingBottom: insets.bottom + 24 
                             }}
                         >
-                            {/* Header */}
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-                                    Book Preview
-                                </Text>
-                                <Pressable
-                                    onPress={handleCloseModal}
-                                    className="w-8 h-8 bg-neutral-100 rounded-full items-center justify-center"
-                                >
-                                    <X size={16} color="#737373" strokeWidth={2.5} />
-                                </Pressable>
-                            </View>
+                            {/* Blur Header with Cover */}
+                            <View className="relative">
+                                <BlurView 
+                                    intensity={80} 
+                                    tint="light"
+                                    className="absolute inset-0 rounded-t-3xl overflow-hidden"
+                                />
+                                <View className="bg-neutral-100/70 rounded-t-3xl pt-4 pb-6 items-center">
+                                    {/* Close Button */}
+                                    <View className="absolute top-4 right-4 z-10">
+                                        <Pressable
+                                            onPress={handleCloseModal}
+                                            className="w-8 h-8 bg-white/80 rounded-full items-center justify-center"
+                                        >
+                                            <X size={16} color="#737373" strokeWidth={2.5} />
+                                        </Pressable>
+                                    </View>
 
-                            {/* Scrollable Content */}
-                            <ScrollView 
-                                showsVerticalScrollIndicator={true}
-                                contentContainerStyle={{ flexGrow: 1 }}
-                            >
-                                {/* Book Info */}
-                                <View className="flex-row mb-4">
-                                    {/* Cover */}
-                                    <View className="w-24 h-36 rounded-xl overflow-hidden shadow-xl shadow-black/20">
+                                    {/* Header Label */}
+                                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">
+                                        Book Preview
+                                    </Text>
+
+                                    {/* Cover - Centered and Prominent */}
+                                    <View className="w-32 h-48 rounded-xl overflow-hidden shadow-2xl shadow-black/30">
                                         {selectedBook.coverUrl ? (
                                             <Image
                                                 source={{ uri: selectedBook.coverUrl }}
@@ -276,33 +279,40 @@ export default function SearchScreen() {
                                             />
                                         ) : (
                                             <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                                                <BookOpen size={32} color="#a3a3a3" />
+                                                <BookOpen size={40} color="#a3a3a3" />
                                             </View>
                                         )}
                                     </View>
+                                </View>
+                            </View>
 
-                                    {/* Details */}
-                                    <View className="flex-1 ml-4 justify-center">
-                                        <Text className="text-lg font-bold text-neutral-900" numberOfLines={3}>
-                                            {selectedBook.title}
-                                        </Text>
-                                        <Text className="text-sm text-neutral-500 mt-1" numberOfLines={1}>
-                                            {selectedBook.author}
-                                        </Text>
+                            {/* Scrollable Content */}
+                            <ScrollView 
+                                className="px-6"
+                                showsVerticalScrollIndicator={true}
+                                contentContainerStyle={{ flexGrow: 1, paddingTop: 16 }}
+                            >
+                                {/* Book Details - Centered */}
+                                <View className="items-center mb-4">
+                                    <Text className="text-xl font-bold text-neutral-900 text-center" numberOfLines={3}>
+                                        {selectedBook.title}
+                                    </Text>
+                                    <Text className="text-sm text-neutral-500 mt-1 text-center" numberOfLines={1}>
+                                        {selectedBook.author}
+                                    </Text>
+                                    <View className="flex-row items-center mt-2">
                                         {selectedVolume?.volumeInfo.publishedDate && (
-                                            <Text className="text-xs text-neutral-400 mt-1">
+                                            <Text className="text-xs text-neutral-400">
                                                 {selectedVolume.volumeInfo.publishedDate.substring(0, 4)}
                                             </Text>
                                         )}
-                                        {/* Page Count Badge */}
+                                        {selectedVolume?.volumeInfo.publishedDate && selectedBook.totalPages > 0 && (
+                                            <Text className="text-xs text-neutral-400 mx-2">•</Text>
+                                        )}
                                         {selectedBook.totalPages > 0 && (
-                                            <View className="flex-row mt-3">
-                                                <View className="bg-neutral-100 rounded-full px-3 py-1">
-                                                    <Text className="text-xs font-medium text-neutral-600">
-                                                        {selectedBook.totalPages} pages
-                                                    </Text>
-                                                </View>
-                                            </View>
+                                            <Text className="text-xs text-neutral-400">
+                                                {selectedBook.totalPages} pages
+                                            </Text>
                                         )}
                                     </View>
                                 </View>
@@ -319,25 +329,27 @@ export default function SearchScreen() {
                             </ScrollView>
 
                             {/* Actions */}
-                            {isBookInLibrary(selectedBook.id) ? (
-                                <View className="bg-neutral-100 rounded-xl py-4 items-center">
-                                    <View className="flex-row items-center">
-                                        <Check size={20} color="#22c55e" strokeWidth={2.5} />
-                                        <Text className="text-base font-semibold text-neutral-600 ml-2">
-                                            Already in Library
-                                        </Text>
+                            <View className="px-6">
+                                {isBookInLibrary(selectedBook.id) ? (
+                                    <View className="bg-neutral-100 rounded-xl py-4 items-center">
+                                        <View className="flex-row items-center">
+                                            <Check size={20} color="#22c55e" strokeWidth={2.5} />
+                                            <Text className="text-base font-semibold text-neutral-600 ml-2">
+                                                Already in Library
+                                            </Text>
+                                        </View>
                                     </View>
-                                </View>
-                            ) : (
-                                <Pressable
-                                    onPress={handleAddFromModal}
-                                    className="bg-neutral-900 rounded-xl py-4 items-center active:bg-neutral-800"
-                                >
-                                    <Text className="text-base font-semibold text-white">
-                                        Add to Library
-                                    </Text>
-                                </Pressable>
-                            )}
+                                ) : (
+                                    <Pressable
+                                        onPress={handleAddFromModal}
+                                        className="bg-neutral-900 rounded-xl py-4 items-center active:bg-neutral-800"
+                                    >
+                                        <Text className="text-base font-semibold text-white">
+                                            Add to Library
+                                        </Text>
+                                    </Pressable>
+                                )}
+                            </View>
                         </View>
                     )}
                 </View>
