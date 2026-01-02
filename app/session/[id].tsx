@@ -1,4 +1,5 @@
 import { useBookStore } from "@/store/useBookStore";
+import { LiquidGlassView, LiquidGlassCard } from "@/components/ui/liquid-glass";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -293,11 +294,16 @@ export default function SessionScreen() {
                 >
                     <ChevronLeft size={24} color="#171717" />
                 </Pressable>
-                <View className="bg-white px-3 py-1.5 rounded-full shadow-md shadow-black/5">
-                    <Text className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
+                <LiquidGlassView
+                    intensity={20}
+                    variant="light"
+                    borderRadius={16}
+                    style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+                >
+                    <Text className="text-xs font-bold text-neutral-600 uppercase tracking-wide">
                         {ATMOSPHERE_OPTIONS.find((a) => a.id === selectedAtmosphere)?.label}
                     </Text>
-                </View>
+                </LiquidGlassView>
                 <Pressable
                     onPress={handleFinishSession}
                     className="bg-neutral-900 px-4 py-2 rounded-full active:scale-95"
@@ -332,9 +338,16 @@ export default function SessionScreen() {
                 <View className="flex-row items-center gap-6">
                     <Pressable
                         onPress={handleSubtractMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="active:scale-90"
                     >
-                        <Minus size={24} color="#171717" strokeWidth={2} />
+                        <LiquidGlassView
+                            intensity={25}
+                            variant="light"
+                            borderRadius={28}
+                            style={{ width: 56, height: 56, alignItems: "center", justifyContent: "center" }}
+                        >
+                            <Minus size={24} color="#171717" strokeWidth={2} />
+                        </LiquidGlassView>
                     </Pressable>
 
                     <Pressable
@@ -350,9 +363,16 @@ export default function SessionScreen() {
 
                     <Pressable
                         onPress={handleAddMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="active:scale-90"
                     >
-                        <Plus size={24} color="#171717" strokeWidth={2} />
+                        <LiquidGlassView
+                            intensity={25}
+                            variant="light"
+                            borderRadius={28}
+                            style={{ width: 56, height: 56, alignItems: "center", justifyContent: "center" }}
+                        >
+                            <Plus size={24} color="#171717" strokeWidth={2} />
+                        </LiquidGlassView>
                     </Pressable>
                 </View>
             </View>
