@@ -15,7 +15,16 @@ import {
     VolumeX,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Dimensions, Pressable, Text, View } from "react-native";
+import {
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -49,10 +58,14 @@ export default function SessionScreen() {
 
     const book = useBookStore((state) => state.getBookById(id || ""));
 
+    const updateProgress = useBookStore((state) => state.updateProgress);
+
     const [phase, setPhase] = useState<"setup" | "timer">("setup");
     const [selectedAtmosphere, setSelectedAtmosphere] = useState<Atmosphere>("mute");
     const [timerSeconds, setTimerSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
     const [isRunning, setIsRunning] = useState(false);
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
+    const [pageInput, setPageInput] = useState("");
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
@@ -61,7 +74,6 @@ export default function SessionScreen() {
                 setTimerSeconds((prev) => {
                     if (prev <= 1) {
                         setIsRunning(false);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                         return 0;
                     }
                     return prev - 1;
@@ -75,6 +87,15 @@ export default function SessionScreen() {
             }
         };
     }, [isRunning, timerSeconds]);
+
+    // Show complete modal when timer hits 0
+    useEffect(() => {
+        if (timerSeconds === 0 && phase === "timer" && !showCompleteModal) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setPageInput(book?.currentPage?.toString() || "0");
+            setShowCompleteModal(true);
+        }
+    }, [timerSeconds, phase, showCompleteModal, book?.currentPage]);
 
     if (!book) {
         return (
@@ -119,10 +140,24 @@ export default function SessionScreen() {
     };
 
     const handleFinishSession = () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
+        setIsRunning(false);
+        setPageInput(book?.currentPage?.toString() || "0");
+        setShowCompleteModal(true);
+    };
+
+    const handleUpdateProgress = () => {
+        const newPage = parseInt(pageInput, 10);
+        if (isNaN(newPage) || newPage < 0 || newPage > (book?.totalPages || 0)) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+        }
+        updateProgress(id || "", newPage);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowCompleteModal(false);
         router.back();
     };
 
@@ -305,6 +340,56 @@ export default function SessionScreen() {
                     {book.title}
                 </Text>
             </View>
+
+            {/* Session Complete Modal */}
+            <Modal
+                visible={showCompleteModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowCompleteModal(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    className="flex-1"
+                >
+                    <View className="flex-1 bg-black/50 justify-end">
+                        <View className="bg-white rounded-t-3xl px-6 py-8">
+                            <Text className="text-2xl font-bold text-neutral-900 text-center mb-6">
+                                Session Complete
+                            </Text>
+
+                            <Text className="text-sm font-medium text-neutral-500 text-center mb-2">
+                                What page are you on now?
+                            </Text>
+
+                            <TextInput
+                                className="bg-neutral-100 rounded-2xl px-6 py-5 text-center text-3xl font-bold text-neutral-900 mb-2"
+                                keyboardType="number-pad"
+                                value={pageInput}
+                                onChangeText={setPageInput}
+                                placeholder="0"
+                                placeholderTextColor="#a3a3a3"
+                                autoFocus
+                            />
+
+                            <Text className="text-xs text-neutral-400 text-center mb-6">
+                                of {book.totalPages} pages
+                            </Text>
+
+                            <Pressable
+                                onPress={handleUpdateProgress}
+                                className="bg-neutral-900 py-4 rounded-2xl items-center justify-center active:scale-[0.98] shadow-xl shadow-black/20"
+                            >
+                                <Text className="text-lg font-bold text-white">
+                                    Update Progress
+                                </Text>
+                            </Pressable>
+
+                            <View style={{ height: insets.bottom }} />
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
