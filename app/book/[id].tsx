@@ -233,7 +233,7 @@ export default function BookDetailScreen() {
                                             className={`py-3 ${index < Math.min(sortedSessions.length, 5) - 1 ? 'border-b border-neutral-100' : ''}`}
                                         >
                                             <Text className="text-sm text-neutral-600">
-                                                {formatSessionDate(session.date)} • {formatDuration(session.durationSeconds)} • +{session.pagesRead} pages
+                                                {formatSessionDate(session.date)} • {formatDuration(session.durationSeconds)} • +{session.endPage - session.startPage} pages
                                             </Text>
                                         </View>
                                     ))}

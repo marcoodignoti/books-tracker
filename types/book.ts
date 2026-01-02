@@ -4,7 +4,8 @@ export interface ReadingSession {
   id: string;
   date: string; // ISO string
   durationSeconds: number;
-  pagesRead: number;
+  startPage: number;
+  endPage: number;
 }
 
 export interface Book {
