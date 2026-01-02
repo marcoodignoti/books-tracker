@@ -1,5 +1,5 @@
 import { useBookStore } from "@/store/useBookStore";
-import { BlurView } from "expo-blur";
+import { LiquidGlassView } from "@/components/ui/liquid-glass";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -134,22 +134,23 @@ export default function BookDetailScreen() {
                 />
             </View>
 
-            {/* Floating Back Button with Blur */}
+            {/* Floating Back Button with Liquid Glass Effect */}
             <View
                 className="absolute z-10"
                 style={{ top: insets.top + 8, left: 16 }}
             >
                 <Pressable
                     onPress={handleBack}
-                    className="overflow-hidden rounded-full active:scale-90"
+                    className="active:scale-90"
                 >
-                    <BlurView
-                        intensity={50}
-                        tint="dark"
-                        className="w-11 h-11 items-center justify-center"
+                    <LiquidGlassView
+                        intensity={40}
+                        variant="dark"
+                        borderRadius={22}
+                        style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
                     >
                         <ChevronLeft size={24} color="#ffffff" />
-                    </BlurView>
+                    </LiquidGlassView>
                 </Pressable>
             </View>
 
@@ -167,18 +168,28 @@ export default function BookDetailScreen() {
                         {book.author}
                     </Text>
 
-                    {/* Stats Row */}
+                    {/* Stats Row with Liquid Glass */}
                     <View className="flex-row items-center gap-4 mb-6">
-                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                        <LiquidGlassView
+                            intensity={30}
+                            variant="dark"
+                            borderRadius={20}
+                            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+                        >
                             <Text className="text-base font-semibold text-white">
                                 {Math.round(progress)}% Complete
                             </Text>
-                        </View>
-                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                        </LiquidGlassView>
+                        <LiquidGlassView
+                            intensity={30}
+                            variant="dark"
+                            borderRadius={20}
+                            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+                        >
                             <Text className="text-base font-semibold text-white">
                                 {pagesLeft} Pages Left
                             </Text>
-                        </View>
+                        </LiquidGlassView>
                     </View>
                 </View>
 
