@@ -174,13 +174,11 @@ export default function SessionScreen() {
             return;
         }
 
-        // Calculate pages read (minimum 0 to avoid negative values for backward navigation)
-        const pagesRead = Math.max(0, newPage - book.currentPage);
-
         // Update progress in store with session data
         updateProgress(book.id, newPage, {
             durationSeconds: sessionElapsedSeconds,
-            pagesRead,
+            startPage: book.currentPage,
+            endPage: newPage,
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);
