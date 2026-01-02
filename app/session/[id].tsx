@@ -70,6 +70,13 @@ export default function SessionScreen() {
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const sessionStartTimeRef = useRef<number | null>(null);
 
+    // Calculate elapsed time from session start
+    const getElapsedSeconds = (): number => {
+        return sessionStartTimeRef.current 
+            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
+            : 0;
+    };
+
     useEffect(() => {
         if (isRunning && timerSeconds > 0) {
             timerRef.current = setInterval(() => {
@@ -77,11 +84,7 @@ export default function SessionScreen() {
                     if (prev <= 1) {
                         setIsRunning(false);
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        // Calculate elapsed time
-                        const elapsed = sessionStartTimeRef.current 
-                            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
-                            : 0;
-                        setSessionElapsedSeconds(elapsed);
+                        setSessionElapsedSeconds(getElapsedSeconds());
                         // Show completion modal when timer reaches 0
                         setPageInput(book?.currentPage?.toString() || "0");
                         setShowCompletionModal(true);
@@ -148,11 +151,7 @@ export default function SessionScreen() {
             clearInterval(timerRef.current);
         }
         setIsRunning(false);
-        // Calculate elapsed time
-        const elapsed = sessionStartTimeRef.current 
-            ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
-            : 0;
-        setSessionElapsedSeconds(elapsed);
+        setSessionElapsedSeconds(getElapsedSeconds());
         // Pre-fill with current page and show modal
         setPageInput(book?.currentPage?.toString() || "0");
         setShowCompletionModal(true);
@@ -175,7 +174,7 @@ export default function SessionScreen() {
             return;
         }
 
-        // Calculate pages read (can be negative if user went back, but we'll pass 0 minimum)
+        // Calculate pages read (minimum 0 to avoid negative values for backward navigation)
         const pagesRead = Math.max(0, newPage - book.currentPage);
 
         // Update progress in store with session data
