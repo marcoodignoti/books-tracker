@@ -20,6 +20,13 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="search-book/[id]"
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
           name="book/[id]"
           options={{
             animation: "fade",

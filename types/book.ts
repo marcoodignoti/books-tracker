@@ -25,6 +25,11 @@ export interface GoogleBookVolume {
     title: string;
     authors?: string[];
     pageCount?: number;
+    description?: string;
+    categories?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    averageRating?: number;
     imageLinks?: {
       extraLarge?: string;
       large?: string;

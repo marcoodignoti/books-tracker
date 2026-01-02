@@ -4,7 +4,7 @@ import { GoogleBookVolume } from "@/types/book";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { BookOpen, Check, Plus, Search, X } from "lucide-react-native";
+import { BookOpen, Check, ChevronRight, Plus, Search, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -45,6 +45,14 @@ export default function SearchScreen() {
             addBook(book);
         },
         [addBook]
+    );
+
+    const handleViewDetails = useCallback(
+        (volumeId: string) => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/search-book/${volumeId}`);
+        },
+        [router]
     );
 
     const handleClose = () => {
@@ -124,9 +132,10 @@ export default function SearchScreen() {
                             );
 
                             return (
-                                <View
+                                <Pressable
                                     key={volume.id}
-                                    className="flex-row bg-white rounded-2xl p-3 mb-3 border border-neutral-100"
+                                    onPress={() => handleViewDetails(volume.id)}
+                                    className="flex-row bg-white rounded-2xl p-3 mb-3 border border-neutral-100 active:bg-neutral-50"
                                 >
                                     {/* Cover */}
                                     <View className="w-16 h-24 rounded-xl overflow-hidden shadow-lg shadow-black/10">
@@ -161,22 +170,30 @@ export default function SearchScreen() {
                                         ) : null}
                                     </View>
 
+                                    {/* ChevronRight Icon */}
+                                    <View className="justify-center ml-2 mr-2">
+                                        <ChevronRight size={20} color="#a3a3a3" strokeWidth={2} />
+                                    </View>
+
                                     {/* Add Button */}
-                                    <View className="justify-center ml-2">
+                                    <View className="justify-center">
                                         {inLibrary ? (
                                             <View className="w-10 h-10 bg-neutral-100 rounded-full items-center justify-center">
                                                 <Check size={20} color="#22c55e" strokeWidth={2.5} />
                                             </View>
                                         ) : (
                                             <Pressable
-                                                onPress={() => handleAddBook(volume)}
+                                                onPress={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddBook(volume);
+                                                }}
                                                 className="w-10 h-10 bg-neutral-900 rounded-full items-center justify-center active:scale-90"
                                             >
                                                 <Plus size={20} color="#ffffff" strokeWidth={2.5} />
                                             </Pressable>
                                         )}
                                     </View>
-                                </View>
+                                </Pressable>
                             );
                         })}
                     </View>

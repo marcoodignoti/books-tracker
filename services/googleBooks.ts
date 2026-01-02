@@ -8,7 +8,7 @@ const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
  * - Removes the curled page effect (&edge=curl)
  * - Changes zoom level from 1 to 0 for highest available resolution
  */
-function getHighResImage(url: string): string {
+export function getHighResImage(url: string): string {
     if (!url) return '';
 
     let highResUrl = url;
