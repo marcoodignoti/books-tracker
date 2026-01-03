@@ -1,4 +1,4 @@
-import { mapGoogleBookToBook, searchBooks } from "@/services/googleBooks";
+import { getHighResImage, mapGoogleBookToBook, searchBooks } from "@/services/googleBooks";
 import { useBookStore } from "@/store/useBookStore";
 import { GoogleBookVolume } from "@/types/book";
 import * as Haptics from "expo-haptics";
@@ -126,10 +126,8 @@ export default function SearchScreen() {
 
                         {results.map((volume) => {
                             const inLibrary = isBookInLibrary(volume.id);
-                            const coverUrl = volume.volumeInfo.imageLinks?.thumbnail?.replace(
-                                "http://",
-                                "https://"
-                            );
+                            const rawCoverUrl = volume.volumeInfo.imageLinks?.thumbnail || "";
+                            const coverUrl = getHighResImage(rawCoverUrl);
 
                             return (
                                 <Pressable
