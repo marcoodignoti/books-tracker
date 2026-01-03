@@ -180,7 +180,8 @@ export default function SessionScreen() {
         // Update progress in store with session data
         updateProgress(book.id, newPage, {
             durationSeconds: sessionElapsedSeconds,
-            pagesRead,
+            startPage: book.currentPage,
+            endPage: newPage,
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);

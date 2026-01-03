@@ -5,7 +5,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface SessionData {
     durationSeconds: number;
-    pagesRead: number;
+    startPage: number;
+    endPage: number;
 }
 
 interface BookStore {
@@ -53,7 +54,8 @@ export const useBookStore = create<BookStore>()(
                                 id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
                                 date: new Date().toISOString(),
                                 durationSeconds: sessionData.durationSeconds,
-                                pagesRead: sessionData.pagesRead,
+                                startPage: sessionData.startPage,
+                                endPage: sessionData.endPage,
                             };
                             updatedBook.sessions = [...(book.sessions || []), newSession];
                         }
