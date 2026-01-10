@@ -3,10 +3,13 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { BookOpen, ChevronLeft, Play, Trash2 } from "lucide-react-native";
+import { BookOpen, ChevronLeft, Clock, Edit3, Play, Plus, Trash2, TrendingUp, X } from "lucide-react-native";
 import { useState } from "react";
 import {
     Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
     Pressable,
     ScrollView,
     Text,
@@ -17,6 +20,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+function formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+}
+
 export default function BookDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
@@ -25,10 +37,20 @@ export default function BookDetailScreen() {
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
     const updateStatus = useBookStore((state) => state.updateStatus);
+    const updateBook = useBookStore((state) => state.updateBook);
     const deleteBook = useBookStore((state) => state.deleteBook);
+    const addNote = useBookStore((state) => state.addNote);
+    const deleteNote = useBookStore((state) => state.deleteNote);
 
     const [showPageInput, setShowPageInput] = useState(false);
     const [pageInput, setPageInput] = useState("");
+    const [showNoteModal, setShowNoteModal] = useState(false);
+    const [noteContent, setNoteContent] = useState("");
+    const [notePage, setNotePage] = useState("");
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editTitle, setEditTitle] = useState("");
+    const [editAuthor, setEditAuthor] = useState("");
+    const [editPages, setEditPages] = useState("");
 
     if (!book) {
         return (
@@ -39,6 +61,19 @@ export default function BookDetailScreen() {
     }
 
     const progress = book.totalPages > 0 ? (book.currentPage / book.totalPages) * 100 : 0;
+
+    // Calculate statistics
+    const sessions = book.sessions || [];
+    const notes = book.notes || [];
+    const totalReadingTime = sessions.reduce((sum, s) => sum + s.duration, 0);
+    const totalPagesRead = sessions.reduce((sum, s) => sum + s.pagesRead, 0);
+    const avgPagesPerHour = totalReadingTime > 0
+        ? Math.round((totalPagesRead / totalReadingTime) * 3600)
+        : 0;
+    const pagesRemaining = book.totalPages - book.currentPage;
+    const estimatedTimeRemaining = avgPagesPerHour > 0
+        ? Math.round((pagesRemaining / avgPagesPerHour) * 3600)
+        : 0;
 
     const handleBack = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -67,6 +102,43 @@ export default function BookDetailScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         deleteBook(book.id);
         router.back();
+    };
+
+    const handleAddNote = () => {
+        if (!noteContent.trim()) return;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const page = notePage ? parseInt(notePage, 10) : undefined;
+        addNote(book.id, { content: noteContent.trim(), page });
+        setNoteContent("");
+        setNotePage("");
+        setShowNoteModal(false);
+    };
+
+    const handleDeleteNote = (noteId: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        deleteNote(book.id, noteId);
+    };
+
+    const handleOpenEditModal = () => {
+        setEditTitle(book.title);
+        setEditAuthor(book.author);
+        setEditPages(book.totalPages.toString());
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = () => {
+        const pages = parseInt(editPages, 10);
+        if (editTitle.trim() && editAuthor.trim() && !isNaN(pages) && pages > 0) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            updateBook(book.id, {
+                title: editTitle.trim(),
+                author: editAuthor.trim(),
+                totalPages: pages,
+            });
+            setShowEditModal(false);
+        } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
     };
 
     return (
@@ -112,12 +184,20 @@ export default function BookDetailScreen() {
                     >
                         <ChevronLeft size={24} color="#ffffff" />
                     </Pressable>
-                    <Pressable
-                        onPress={handleDelete}
-                        className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
-                    >
-                        <Trash2 size={20} color="#ef4444" />
-                    </Pressable>
+                    <View className="flex-row gap-2">
+                        <Pressable
+                            onPress={handleOpenEditModal}
+                            className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
+                        >
+                            <Edit3 size={18} color="#ffffff" />
+                        </Pressable>
+                        <Pressable
+                            onPress={handleDelete}
+                            className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
+                        >
+                            <Trash2 size={20} color="#ef4444" />
+                        </Pressable>
+                    </View>
                 </View>
 
                 {/* Cover */}
@@ -147,7 +227,7 @@ export default function BookDetailScreen() {
                     </Text>
 
                     {/* Progress */}
-                    <View className="bg-white/10 rounded-2xl p-4 mb-6">
+                    <View className="bg-white/10 rounded-2xl p-4 mb-4">
                         <View className="flex-row justify-between mb-2">
                             <Text className="text-xs font-bold uppercase tracking-widest text-white/50">
                                 Progress
@@ -166,6 +246,40 @@ export default function BookDetailScreen() {
                             {book.currentPage} of {book.totalPages} pages
                         </Text>
                     </View>
+
+                    {/* Statistics */}
+                    {sessions.length > 0 && (
+                        <View className="bg-white/10 rounded-2xl p-4 mb-4">
+                            <Text className="text-xs font-bold uppercase tracking-widest text-white/50 mb-3">
+                                Reading Stats
+                            </Text>
+                            <View className="flex-row gap-3">
+                                <View className="flex-1 bg-white/10 rounded-xl p-3 items-center">
+                                    <Clock size={18} color="#a3a3a3" />
+                                    <Text className="text-lg font-bold text-white mt-1">
+                                        {formatDuration(totalReadingTime)}
+                                    </Text>
+                                    <Text className="text-xs text-white/50">Total Time</Text>
+                                </View>
+                                <View className="flex-1 bg-white/10 rounded-xl p-3 items-center">
+                                    <TrendingUp size={18} color="#a3a3a3" />
+                                    <Text className="text-lg font-bold text-white mt-1">
+                                        {sessions.length}
+                                    </Text>
+                                    <Text className="text-xs text-white/50">Sessions</Text>
+                                </View>
+                                {estimatedTimeRemaining > 0 && (
+                                    <View className="flex-1 bg-white/10 rounded-xl p-3 items-center">
+                                        <BookOpen size={18} color="#a3a3a3" />
+                                        <Text className="text-lg font-bold text-white mt-1">
+                                            {formatDuration(estimatedTimeRemaining)}
+                                        </Text>
+                                        <Text className="text-xs text-white/50">To Finish</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    )}
 
                     {/* Update Page */}
                     {showPageInput ? (
@@ -205,6 +319,46 @@ export default function BookDetailScreen() {
                         </Pressable>
                     )}
 
+                    {/* Notes Section */}
+                    <View className="bg-white/10 rounded-2xl p-4 mb-4">
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Text className="text-xs font-bold uppercase tracking-widest text-white/50">
+                                Notes & Quotes
+                            </Text>
+                            <Pressable
+                                onPress={() => setShowNoteModal(true)}
+                                className="w-8 h-8 bg-white/20 rounded-full items-center justify-center active:scale-90"
+                            >
+                                <Plus size={18} color="#ffffff" />
+                            </Pressable>
+                        </View>
+
+                        {notes.length === 0 ? (
+                            <Text className="text-white/50 text-center py-4">
+                                No notes yet. Add your first note!
+                            </Text>
+                        ) : (
+                            <View className="gap-2">
+                                {notes.map((note) => (
+                                    <View key={note.id} className="bg-white/10 rounded-xl p-3">
+                                        <Text className="text-white text-sm mb-2">{note.content}</Text>
+                                        <View className="flex-row items-center justify-between">
+                                            {note.page && (
+                                                <Text className="text-xs text-white/50">Page {note.page}</Text>
+                                            )}
+                                            <Pressable
+                                                onPress={() => handleDeleteNote(note.id)}
+                                                className="px-2 py-1 active:opacity-50"
+                                            >
+                                                <Trash2 size={14} color="#ef4444" />
+                                            </Pressable>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+
                     {/* Start Session Button */}
                     <Pressable
                         onPress={handleStartReading}
@@ -217,6 +371,99 @@ export default function BookDetailScreen() {
                     </Pressable>
                 </View>
             </ScrollView>
+
+            {/* Add Note Modal */}
+            <Modal visible={showNoteModal} transparent animationType="slide">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    className="flex-1"
+                >
+                    <View className="flex-1 bg-black/50 justify-end">
+                        <View className="bg-neutral-900 rounded-t-3xl p-6" style={{ paddingBottom: insets.bottom + 16 }}>
+                            <View className="flex-row items-center justify-between mb-4">
+                                <Text className="text-xl font-bold text-white">Add Note</Text>
+                                <Pressable onPress={() => setShowNoteModal(false)}>
+                                    <X size={24} color="#ffffff" />
+                                </Pressable>
+                            </View>
+                            <TextInput
+                                className="bg-white/10 rounded-xl px-4 py-3 text-white text-base mb-3"
+                                placeholder="Your note or quote..."
+                                placeholderTextColor="rgba(255,255,255,0.4)"
+                                multiline
+                                numberOfLines={4}
+                                value={noteContent}
+                                onChangeText={setNoteContent}
+                                style={{ minHeight: 100, textAlignVertical: 'top' }}
+                            />
+                            <TextInput
+                                className="bg-white/10 rounded-xl px-4 py-3 text-white text-base mb-4"
+                                placeholder="Page number (optional)"
+                                placeholderTextColor="rgba(255,255,255,0.4)"
+                                keyboardType="number-pad"
+                                value={notePage}
+                                onChangeText={setNotePage}
+                            />
+                            <Pressable
+                                onPress={handleAddNote}
+                                className="bg-white rounded-xl py-3 items-center active:scale-[0.98]"
+                            >
+                                <Text className="text-lg font-bold text-neutral-900">Save Note</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+
+            {/* Edit Book Modal */}
+            <Modal visible={showEditModal} transparent animationType="slide">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    className="flex-1"
+                >
+                    <View className="flex-1 bg-black/50 justify-end">
+                        <View className="bg-neutral-900 rounded-t-3xl p-6" style={{ paddingBottom: insets.bottom + 16 }}>
+                            <View className="flex-row items-center justify-between mb-4">
+                                <Text className="text-xl font-bold text-white">Edit Book</Text>
+                                <Pressable onPress={() => setShowEditModal(false)}>
+                                    <X size={24} color="#ffffff" />
+                                </Pressable>
+                            </View>
+                            <Text className="text-xs text-white/50 mb-1 ml-1">Title</Text>
+                            <TextInput
+                                className="bg-white/10 rounded-xl px-4 py-3 text-white text-base mb-3"
+                                placeholder="Book title"
+                                placeholderTextColor="rgba(255,255,255,0.4)"
+                                value={editTitle}
+                                onChangeText={setEditTitle}
+                            />
+                            <Text className="text-xs text-white/50 mb-1 ml-1">Author</Text>
+                            <TextInput
+                                className="bg-white/10 rounded-xl px-4 py-3 text-white text-base mb-3"
+                                placeholder="Author name"
+                                placeholderTextColor="rgba(255,255,255,0.4)"
+                                value={editAuthor}
+                                onChangeText={setEditAuthor}
+                            />
+                            <Text className="text-xs text-white/50 mb-1 ml-1">Total Pages</Text>
+                            <TextInput
+                                className="bg-white/10 rounded-xl px-4 py-3 text-white text-base mb-4"
+                                placeholder="Number of pages"
+                                placeholderTextColor="rgba(255,255,255,0.4)"
+                                keyboardType="number-pad"
+                                value={editPages}
+                                onChangeText={setEditPages}
+                            />
+                            <Pressable
+                                onPress={handleSaveEdit}
+                                className="bg-white rounded-xl py-3 items-center active:scale-[0.98]"
+                            >
+                                <Text className="text-lg font-bold text-neutral-900">Save Changes</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
