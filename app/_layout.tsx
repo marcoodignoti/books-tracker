@@ -1,6 +1,12 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LogBox } from "react-native";
 import "../global.css";
+
+// Suppress specific warnings
+LogBox.ignoreLogs([
+  "SafeAreaView has been deprecated",
+]);
 
 export default function RootLayout() {
   return (
