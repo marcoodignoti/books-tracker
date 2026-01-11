@@ -17,21 +17,24 @@ function EmptyState() {
 
     return (
         <View className="flex-1 items-center justify-center px-8">
-            <View className="w-24 h-24 rounded-full bg-neutral-100 items-center justify-center mb-6">
+            <View className="w-24 h-24 rounded-full bg-neutral-900 items-center justify-center mb-6">
                 <BookOpen size={40} color="#a3a3a3" strokeWidth={1.5} />
             </View>
-            <Text className="text-2xl font-bold text-neutral-900 text-center mb-2">
-                Your Library is Empty
+            <Text
+                className="text-2xl font-black text-white text-center mb-2 tracking-tighter"
+                style={{ fontFamily: 'Inter_900Black' }}
+            >
+                Library is Empty
             </Text>
-            <Text className="text-base text-neutral-500 text-center mb-8">
+            <Text className="text-base text-neutral-500 text-center mb-8 font-medium">
                 Start building your collection by adding your first book
             </Text>
             <Pressable
                 onPress={handleAddBook}
-                className="bg-neutral-900 px-8 py-4 rounded-2xl flex-row items-center gap-3 shadow-xl shadow-black/20 active:scale-95"
+                className="bg-white px-8 py-4 rounded-full flex-row items-center gap-3 active:scale-95"
             >
-                <Plus size={20} color="#ffffff" strokeWidth={2.5} />
-                <Text className="text-white font-semibold text-base">Add Your First Book</Text>
+                <Plus size={20} color="#000000" strokeWidth={2.5} />
+                <Text className="text-black font-bold text-base uppercase tracking-wider">Add Book</Text>
             </Pressable>
         </View>
     );
@@ -56,10 +59,10 @@ function BookCard({ book, isHero }: BookCardProps) {
         return (
             <Pressable
                 onPress={handlePress}
-                className="bg-white rounded-3xl shadow-2xl shadow-black/15 overflow-hidden mx-4 mb-6 active:scale-[0.98]"
+                className="bg-neutral-900 rounded-[32px] overflow-hidden mx-4 mb-8 active:scale-[0.98]"
             >
-                <View className="flex-row p-4">
-                    <View className="w-32 h-48 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
+                <View className="flex-row p-5">
+                    <View className="w-32 h-48 rounded-2xl overflow-hidden bg-neutral-800">
                         {book.coverUrl ? (
                             <Image
                                 source={{ uri: book.coverUrl }}
@@ -67,29 +70,35 @@ function BookCard({ book, isHero }: BookCardProps) {
                                 contentFit="cover"
                             />
                         ) : (
-                            <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                                <BookOpen size={32} color="#a3a3a3" />
+                            <View className="w-full h-full items-center justify-center">
+                                <BookOpen size={32} color="#525252" />
                             </View>
                         )}
                     </View>
-                    <View className="flex-1 ml-4 justify-center">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">
-                            Currently Reading
-                        </Text>
-                        <Text className="text-xl font-bold text-neutral-900 mb-1" numberOfLines={2}>
+                    <View className="flex-1 ml-5 justify-center">
+                        <View className="bg-red-600 self-start px-2 py-1 rounded-md mb-3">
+                            <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
+                                Reading Now
+                            </Text>
+                        </View>
+                        <Text
+                            className="text-2xl font-black text-white mb-1 leading-tight tracking-tighter"
+                            numberOfLines={2}
+                            style={{ fontFamily: 'Inter_900Black' }}
+                        >
                             {book.title}
                         </Text>
-                        <Text className="text-sm text-neutral-500 mb-4" numberOfLines={1}>
+                        <Text className="text-sm text-neutral-400 mb-6 font-medium" numberOfLines={1}>
                             {book.author}
                         </Text>
-                        <View className="h-2 bg-neutral-100 rounded-full overflow-hidden">
+                        <View className="h-1 bg-neutral-800 rounded-full overflow-hidden mb-2">
                             <View
-                                className="h-full bg-neutral-900 rounded-full"
+                                className="h-full bg-white rounded-full"
                                 style={{ width: `${progress}%` }}
                             />
                         </View>
-                        <Text className="text-xs text-neutral-400 mt-2">
-                            {book.currentPage} of {book.totalPages} pages
+                        <Text className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+                            {Math.round(progress)}% Complete
                         </Text>
                     </View>
                 </View>
@@ -100,9 +109,9 @@ function BookCard({ book, isHero }: BookCardProps) {
     return (
         <Pressable
             onPress={handlePress}
-            className="w-28 mr-4 active:scale-95"
+            className="w-32 mr-4 active:scale-95"
         >
-            <View className="w-28 h-40 rounded-2xl overflow-hidden shadow-xl shadow-black/10 mb-2">
+            <View className="w-32 h-48 rounded-xl overflow-hidden bg-neutral-900 mb-3">
                 {book.coverUrl ? (
                     <Image
                         source={{ uri: book.coverUrl }}
@@ -110,15 +119,18 @@ function BookCard({ book, isHero }: BookCardProps) {
                         contentFit="cover"
                     />
                 ) : (
-                    <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                        <BookOpen size={24} color="#a3a3a3" />
+                    <View className="w-full h-full items-center justify-center">
+                        <BookOpen size={24} color="#525252" />
                     </View>
                 )}
             </View>
-            <Text className="text-sm font-semibold text-neutral-900" numberOfLines={1}>
+            <Text
+                className="text-sm font-bold text-white mb-1 leading-tight"
+                numberOfLines={2}
+            >
                 {book.title}
             </Text>
-            <Text className="text-xs text-neutral-500" numberOfLines={1}>
+            <Text className="text-xs text-neutral-500 font-medium" numberOfLines={1}>
                 {book.author}
             </Text>
         </Pressable>
@@ -141,25 +153,28 @@ export default function LibraryScreen() {
 
     if (books.length === 0) {
         return (
-            <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+            <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
                 <EmptyState />
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+        <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                 {/* Header */}
-                <View className="flex-row items-center justify-between px-4 py-4">
-                    <Text className="text-3xl font-bold tracking-tight text-neutral-900">
-                        Library
+                <View className="flex-row items-end justify-between px-6 pb-8 pt-4">
+                    <Text
+                        className="text-5xl font-black text-white tracking-tighter"
+                        style={{ fontFamily: 'Inter_900Black' }}
+                    >
+                        Index.
                     </Text>
                     <Pressable
                         onPress={handleAddBook}
-                        className="w-12 h-12 bg-neutral-900 rounded-full items-center justify-center shadow-lg shadow-black/20 active:scale-90"
+                        className="w-12 h-12 bg-white rounded-full items-center justify-center active:scale-90 mb-2"
                     >
-                        <Plus size={24} color="#ffffff" strokeWidth={2.5} />
+                        <Plus size={24} color="#000000" strokeWidth={2.5} />
                     </Pressable>
                 </View>
 
@@ -170,14 +185,14 @@ export default function LibraryScreen() {
 
                 {/* Additional Currently Reading Books */}
                 {currentlyReading.length > 1 && (
-                    <View className="mb-6">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 px-4 mb-3">
+                    <View className="mb-8">
+                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
                             Also Reading
                         </Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
+                            contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
                         >
                             {currentlyReading.slice(1).map((book) => (
                                 <BookCard key={book.id} book={book} />
@@ -188,14 +203,14 @@ export default function LibraryScreen() {
 
                 {/* Want to Read Section */}
                 {wantToRead.length > 0 && (
-                    <View className="mb-6">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 px-4 mb-3">
-                            Want to Read
+                    <View className="mb-8">
+                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
+                            Queue
                         </Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
+                            contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
                         >
                             {wantToRead.map((book) => (
                                 <BookCard key={book.id} book={book} />
@@ -206,14 +221,14 @@ export default function LibraryScreen() {
 
                 {/* Finished Section */}
                 {finished.length > 0 && (
-                    <View className="mb-6">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 px-4 mb-3">
-                            Finished
+                    <View className="mb-8">
+                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
+                            Archive
                         </Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
+                            contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
                         >
                             {finished.map((book) => (
                                 <BookCard key={book.id} book={book} />
