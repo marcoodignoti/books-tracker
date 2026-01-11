@@ -59,11 +59,7 @@ export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
     }
 }
 
-<<<<<<< HEAD
 export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions' | 'notes'> {
-=======
-export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions'> {
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
     const { volumeInfo } = volume;
     const imageLinks = volumeInfo.imageLinks;
 
