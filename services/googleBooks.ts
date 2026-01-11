@@ -21,9 +21,6 @@ export function getHighResImage(url: string): string {
     // Remove the curled page effect
     highResUrl = highResUrl.replace(/&edge=curl/gi, '');
 
-    // Change zoom=1 to zoom=0 for highest available resolution
-    highResUrl = highResUrl.replace(/&zoom=1/gi, '&zoom=0');
-
     return highResUrl;
 }
 
@@ -36,16 +33,22 @@ export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
+        const url = `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=20&printType=books`;
+        console.log(`[API] Fetching: ${url}`);
+
         const response = await fetch(
-            `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=20&printType=books`,
+            url,
             { signal: controller.signal }
         );
+
+        console.log(`[API] Response status: ${response.status}`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch books');
         }
 
         const data: GoogleBooksResponse = await response.json();
+        console.log(`[API] Found ${data.totalItems} items (returned ${data.items?.length || 0})`);
         return data.items || [];
     } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -59,13 +62,77 @@ export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
     }
 }
 
+// ... existing imports
+// Add OpenLibrary types if needed, or just use 'any' for the external response given it's simple
+interface OpenLibraryDoc {
+    key: string;
+    title: string;
+    author_name?: string[];
+    cover_i?: number;
+    isbn?: string[];
+    number_of_pages_median?: number;
+    first_publish_year?: number;
+}
+
+interface OpenLibraryResponse {
+    numFound: number;
+    docs: OpenLibraryDoc[];
+}
+
+const OPEN_LIBRARY_SEARCH_API = 'https://openlibrary.org/search.json';
+
+export async function searchOpenLibrary(query: string): Promise<GoogleBookVolume[]> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+        console.log(`[OpenLibrary] Searching for: ${query}`);
+        const response = await fetch(`${OPEN_LIBRARY_SEARCH_API}?q=${encodeURIComponent(query)}`, {
+            signal: controller.signal
+        });
+
+        if (!response.ok) throw new Error('OpenLibrary request failed');
+
+        const data: OpenLibraryResponse = await response.json();
+        console.log(`[OpenLibrary] Found ${data.numFound} items`);
+
+        if (data.docs && data.docs.length > 0) {
+            // Map OpenLibrary structure to our internal GoogleBookVolume structure for consistency
+            return data.docs.map(doc => ({
+                id: doc.key.replace('/works/', ''), // OL works key
+                volumeInfo: {
+                    title: doc.title,
+                    authors: doc.author_name,
+                    pageCount: doc.number_of_pages_median,
+                    publishedDate: doc.first_publish_year?.toString(),
+                    imageLinks: doc.cover_i ? {
+                        thumbnail: `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`,
+                        large: `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+                    } : undefined
+                }
+            }));
+        }
+        return [];
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.error('[OpenLibrary] Search failed: Request timed out');
+        } else {
+            console.error('[OpenLibrary] Search failed:', error instanceof Error ? error.message : "Unknown error");
+        }
+        return [];
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+
 export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions' | 'notes'> {
     const { volumeInfo } = volume;
     const imageLinks = volumeInfo.imageLinks;
 
     // Prioritize higher resolution images when available
     // Order: extraLarge > large > medium > thumbnail > smallThumbnail
-    const rawCoverUrl =
+    let rawCoverUrl =
         imageLinks?.extraLarge ||
         imageLinks?.large ||
         imageLinks?.medium ||
@@ -73,7 +140,18 @@ export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'added
         imageLinks?.smallThumbnail ||
         '';
 
-    // Apply high-res transformations to the URL
+    // If no Google Book image, try OpenLibrary fallback using ISBN
+    if (!rawCoverUrl && volumeInfo.industryIdentifiers) {
+        const isbn13 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_13')?.identifier;
+        const isbn10 = volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_10')?.identifier;
+        const isbn = isbn13 || isbn10;
+
+        if (isbn) {
+            rawCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+        }
+    }
+
+    // Apply high-res transformations to the URL (only affects Google URLs)
     const coverUrl = getHighResImage(rawCoverUrl);
 
     return {

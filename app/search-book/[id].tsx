@@ -5,12 +5,15 @@ import { GoogleBookVolume } from "@/types/book";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BookOpen, Check, Plus, Star } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 export default function SearchBookPreviewScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const [bookData, setBookData] = useState<GoogleBookVolume | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -75,13 +78,13 @@ export default function SearchBookPreviewScreen() {
     };
 
     const handleBack = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
     };
 
     const handleAddBook = () => {
         if (!bookData) return;
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const book = mapGoogleBookToBook(bookData);
         addBook(book);
     };
@@ -92,25 +95,25 @@ export default function SearchBookPreviewScreen() {
 
     if (isLoading) {
         return (
-            <View className="flex-1 bg-black items-center justify-center">
-                <ActivityIndicator size="large" color="#ffffff" />
-                <Text className="text-white text-base mt-4">Loading book details...</Text>
+            <View className="flex-1 bg-white dark:bg-black items-center justify-center">
+                <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#000000"} />
+                <Text className="text-black dark:text-white text-base mt-4">Loading book details...</Text>
             </View>
         );
     }
 
     if (error || !bookData) {
         return (
-            <View className="flex-1 bg-black items-center justify-center px-8">
-                <BookOpen size={48} color="#ffffff" strokeWidth={1.5} />
-                <Text className="text-white text-lg font-semibold mt-4">
+            <View className="flex-1 bg-white dark:bg-black items-center justify-center px-8">
+                <BookOpen size={48} color={isDark ? "#ffffff" : "#000000"} strokeWidth={1.5} />
+                <Text className="text-black dark:text-white text-lg font-semibold mt-4">
                     {error || "Book not found"}
                 </Text>
                 <Pressable
                     onPress={handleBack}
-                    className="mt-6 bg-white px-6 py-3 rounded-full"
+                    className="mt-6 bg-black dark:bg-white px-6 py-3 rounded-full"
                 >
-                    <Text className="text-black font-semibold">Go Back</Text>
+                    <Text className="text-white dark:text-black font-semibold">Go Back</Text>
                 </Pressable>
             </View>
         );
@@ -138,36 +141,56 @@ export default function SearchBookPreviewScreen() {
             statsContent={
                 <>
                     {volumeInfo.pageCount && (
-                        <View className="bg-white/10 px-4 py-2 rounded-full">
-                            <Text className="text-base font-semibold text-white">
+                        <View className="bg-black/40 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+                            <Text className="text-xs font-bold text-white uppercase tracking-wider">
                                 {volumeInfo.pageCount} Pages
                             </Text>
                         </View>
                     )}
                     {volumeInfo.averageRating && (
-                        <View className="bg-white/10 px-4 py-2 rounded-full flex-row items-center gap-1">
-                            <Star size={16} color="#ffffff" fill="#ffffff" />
-                            <Text className="text-base font-semibold text-white">
+                        <View className="bg-black/40 px-4 py-2 rounded-full flex-row items-center gap-1 border border-white/10 backdrop-blur-sm">
+                            <Star size={14} color="#ffffff" fill="#ffffff" />
+                            <Text className="text-xs font-bold text-white">
                                 {volumeInfo.averageRating.toFixed(1)}
                             </Text>
                         </View>
                     )}
                     {volumeInfo.categories && volumeInfo.categories.length > 0 && (
-                        <View className="bg-white/10 px-4 py-2 rounded-full">
-                            <Text className="text-base font-semibold text-white">
+                        <View className="bg-black/40 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+                            <Text className="text-xs font-bold text-white uppercase tracking-wider" numberOfLines={1}>
                                 {volumeInfo.categories[0]}
                             </Text>
                         </View>
                     )}
                 </>
             }
+            footer={
+                inLibrary ? (
+                    <View className="bg-neutral-100 dark:bg-neutral-800 py-4 rounded-2xl flex-row items-center justify-center gap-3 border border-neutral-200 dark:border-neutral-700">
+                        <Check size={22} color="#22c55e" strokeWidth={2.5} />
+                        <Text className="text-lg font-bold text-neutral-600 dark:text-neutral-400">
+                            Already in Library
+                        </Text>
+                    </View>
+                ) : (
+                    <Pressable
+                        onPress={handleAddBook}
+                        className="bg-black dark:bg-white py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20"
+                    >
+                        <Plus size={22} color={isDark ? "#000000" : "#ffffff"} strokeWidth={2.5} />
+                        <Text className="text-lg font-bold text-white dark:text-black">
+                            Add to Library
+                        </Text>
+                    </Pressable>
+                )
+            }
         >
             {volumeInfo.description && (
                 <View className="mb-4">
-                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-3">
                         Description
                     </Text>
-                    <Text className="text-base text-neutral-700 leading-6">
+                    <Text className="text-base text-neutral-800 dark:text-neutral-300 leading-6">
                         {stripHtml(volumeInfo.description)}
                     </Text>
                 </View>
@@ -175,17 +198,17 @@ export default function SearchBookPreviewScreen() {
 
             {(volumeInfo.publisher || volumeInfo.publishedDate) && (
                 <View className="mb-4">
-                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-3">
                         Publication Details
                     </Text>
                     {volumeInfo.publisher && (
-                        <Text className="text-base text-neutral-700 mb-1">
+                        <Text className="text-base text-neutral-800 dark:text-neutral-300 mb-1">
                             <Text className="font-semibold">Publisher:</Text>{" "}
                             {volumeInfo.publisher}
                         </Text>
                     )}
                     {volumeInfo.publishedDate && (
-                        <Text className="text-base text-neutral-700">
+                        <Text className="text-base text-neutral-800 dark:text-neutral-300">
                             <Text className="font-semibold">Published:</Text>{" "}
                             {volumeInfo.publishedDate}
                         </Text>
@@ -193,24 +216,7 @@ export default function SearchBookPreviewScreen() {
                 </View>
             )}
 
-            {inLibrary ? (
-                <View className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 mb-4">
-                    <Check size={22} color="#22c55e" strokeWidth={2.5} />
-                    <Text className="text-lg font-bold text-neutral-600">
-                        Already in Library
-                    </Text>
-                </View>
-            ) : (
-                <Pressable
-                    onPress={handleAddBook}
-                    className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-4"
-                >
-                    <Plus size={22} color="#ffffff" strokeWidth={2.5} />
-                    <Text className="text-lg font-bold text-white">
-                        Add to Library
-                    </Text>
-                </Pressable>
-            )}
+
         </BookImmersiveLayout>
     );
 }

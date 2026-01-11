@@ -1,4 +1,3 @@
-import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -11,6 +10,7 @@ import {
     Play,
     Plus
 } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useEffect, useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
@@ -35,6 +35,8 @@ export default function SessionScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
@@ -84,8 +86,8 @@ export default function SessionScreen() {
 
     if (!book) {
         return (
-            <View className="flex-1 bg-black items-center justify-center">
-                <Text className="text-white text-lg font-bold">Book not found</Text>
+            <View className="flex-1 bg-white dark:bg-black items-center justify-center">
+                <Text className="text-black dark:text-white text-lg font-bold">Book not found</Text>
             </View>
         );
     }
@@ -172,45 +174,37 @@ export default function SessionScreen() {
 
     return (
         <View
-            className="flex-1 bg-black"
+            className="flex-1 bg-white dark:bg-black"
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             {/* Header */}
             <View className="flex-row items-center justify-between px-6 py-4 z-20">
-                {/* Floating Back Glass Button */}
+                {/* Back Button - Clean Circle */}
                 <Pressable onPress={handleBack} className="active:scale-90">
-                    <GlassCard
-                        intensity={40}
-                        className="w-12 h-12 rounded-full border-white/20"
-                        contentClassName="items-center justify-center h-full w-full"
-                    >
-                        <ChevronLeft size={24} color="#ffffff" />
-                    </GlassCard>
+                    <View className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 items-center justify-center bg-white dark:bg-black">
+                        <ChevronLeft size={24} color={isDark ? "#ffffff" : "#000000"} />
+                    </View>
                 </Pressable>
 
-                {/* Title Pill (Flat) */}
-                <View className="bg-neutral-900 px-4 py-2 rounded-full border border-neutral-800">
-                    <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                {/* Title Pill - Clean */}
+                <View className="bg-neutral-100 dark:bg-neutral-900 px-4 py-2 rounded-full border border-neutral-200 dark:border-neutral-800">
+                    <Text className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                         Reading Session
                     </Text>
                 </View>
 
-                {/* Done Glass Pill */}
+                {/* Done Pill - Clean */}
                 <Pressable onPress={handleFinishSession} className="active:scale-95">
-                    <GlassCard
-                        intensity={30}
-                        className="px-6 h-10 rounded-full border-white/20"
-                        contentClassName="items-center justify-center h-full w-full"
-                    >
-                        <Text className="text-xs font-black uppercase tracking-wider text-white">Done</Text>
-                    </GlassCard>
+                    <View className="px-6 h-10 rounded-full border border-black/10 dark:border-white/10 items-center justify-center bg-white dark:bg-black">
+                        <Text className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">Done</Text>
+                    </View>
                 </Pressable>
             </View>
 
             {/* Content */}
             <View className="flex-1 items-center justify-center px-8">
-                {/* Book Cover (Small & Darkened) */}
-                <View className="w-32 h-48 rounded-sm overflow-hidden bg-neutral-900 mb-16 opacity-60 border border-white/5 shadow-2xl shadow-black">
+                {/* Book Cover (Clean & Shadows) */}
+                <View className="w-32 h-48 rounded-xl overflow-hidden bg-neutral-200 dark:bg-neutral-900 mb-16 opacity-80 border border-black/5 dark:border-white/5 shadow-xl shadow-black/20">
                     {book.coverUrl ? (
                         <Image
                             source={{ uri: book.coverUrl }}
@@ -218,116 +212,105 @@ export default function SessionScreen() {
                             contentFit="cover"
                         />
                     ) : (
-                        <View className="w-full h-full bg-neutral-800 items-center justify-center">
-                            <BookOpen size={32} color="#525252" />
+                        <View className="w-full h-full bg-neutral-200 dark:bg-neutral-800 items-center justify-center">
+                            <BookOpen size={32} color={isDark ? "#525252" : "#a3a3a3"} />
                         </View>
                     )}
                 </View>
 
-                {/* Timer - Hero Swiss Type */}
+                {/* Timer - Clean Type */}
                 <View className="mb-20 items-center">
                     <Text
-                        className="text-8xl font-black text-white tracking-tighter leading-none font-variant-numeric-tabular-nums"
-                        style={{ fontFamily: 'Inter_900Black', fontSize: 96 }}
+                        className="text-7xl font-bold text-black dark:text-white tracking-tight leading-none font-variant-numeric-tabular-nums"
+                        style={{ fontFamily: 'Inter_700Bold' }}
                     >
                         {formatTime(timerSeconds)}
                     </Text>
                     {elapsedSeconds > 0 && (
-                        <View className="mt-4 px-3 py-1 bg-neutral-900 rounded-sm">
-                            <Text className="text-neutral-500 font-bold text-xs tracking-widest uppercase">
+                        <View className="mt-4 px-3 py-1 bg-neutral-100 dark:bg-neutral-900 rounded-full">
+                            <Text className="text-neutral-500 font-bold text-xs tracking-wide uppercase">
                                 {formatTime(elapsedSeconds)} Elapsed
                             </Text>
                         </View>
                     )}
                 </View>
 
-                {/* Controls - Glass Center, Flat Sides */}
+                {/* Controls - Clean Clean Circles */}
                 <View className="flex-row items-center gap-10">
                     {/* Subtract Time */}
                     <Pressable
                         onPress={handleSubtractMinute}
-                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
+                        className="w-16 h-16 bg-neutral-100 dark:bg-neutral-900 rounded-full items-center justify-center border border-neutral-200 dark:border-neutral-800 active:scale-90"
                     >
-                        <Minus size={24} color="#737373" strokeWidth={2.5} />
+                        <Minus size={24} color={isDark ? "#737373" : "#525252"} strokeWidth={2.5} />
                     </Pressable>
 
-                    {/* Play/Pause - Floating Glass Circle */}
-                    <Pressable onPress={handlePlayPause} className="active:scale-95 shadow-2xl shadow-black/50">
-                        <GlassCard
-                            intensity={23}
-                            className="w-24 h-24 rounded-full border-white/20"
-                            contentClassName="items-center justify-center h-full w-full"
-                        >
+                    {/* Play/Pause - Big Circle */}
+                    <Pressable onPress={handlePlayPause} className="active:scale-95 shadow-xl shadow-black/20">
+                        <View className="w-24 h-24 rounded-full border border-black/10 dark:border-white/10 items-center justify-center bg-black dark:bg-white">
                             {isRunning ? (
-                                <Pause size={36} color="#ffffff" fill="#ffffff" />
+                                <Pause size={36} color={isDark ? "#000000" : "#ffffff"} fill={isDark ? "#000000" : "#ffffff"} />
                             ) : (
-                                <Play size={36} color="#ffffff" fill="#ffffff" style={{ marginLeft: 4 }} />
+                                <Play size={36} color={isDark ? "#000000" : "#ffffff"} fill={isDark ? "#000000" : "#ffffff"} style={{ marginLeft: 4 }} />
                             )}
-                        </GlassCard>
+                        </View>
                     </Pressable>
 
                     {/* Add Time */}
                     <Pressable
                         onPress={handleAddMinute}
-                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
+                        className="w-16 h-16 bg-neutral-100 dark:bg-neutral-900 rounded-full items-center justify-center border border-neutral-200 dark:border-neutral-800 active:scale-90"
                     >
-                        <Plus size={24} color="#737373" strokeWidth={2.5} />
+                        <Plus size={24} color={isDark ? "#737373" : "#525252"} strokeWidth={2.5} />
                     </Pressable>
                 </View>
             </View>
 
             {/* Footer Book Info */}
             <View className="items-center pb-8 opacity-40">
-                <Text className="text-xs font-bold text-white uppercase tracking-widest" numberOfLines={1}>
+                <Text className="text-xs font-bold text-black dark:text-white uppercase tracking-wide" numberOfLines={1}>
                     {book.title}
                 </Text>
             </View>
 
-            {/* Session Complete Modal - Glass Overlay */}
+            {/* Session Complete Modal - Clean */}
             <Modal
                 visible={showCompletionModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowCompletionModal(false)}
             >
-                <GlassCard
-                    intensity={80}
-                    tint="dark"
-                    className="flex-1 w-full h-full"
-                    contentClassName="flex-1 justify-center items-center px-6 bg-black/40"
-                    borderRadius={0}
-                >
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
                     <KeyboardAvoidingView
                         behavior={Platform.OS === "ios" ? "padding" : "height"}
                         className="w-full"
                     >
-                        {/* Modal Content - Floating Glass Card */}
-                        <GlassCard
-                            intensity={40}
-                            className="w-full rounded-[32px] border-white/10 overflow-hidden"
-                            contentClassName="p-8 items-center"
-                        >
+                        <View className="w-full bg-white dark:bg-neutral-900 rounded-3xl p-8 items-center shadow-xl border border-black/5 dark:border-white/10">
+
                             {/* Header */}
                             <View className="items-center mb-8">
-                                <Text className="text-3xl font-black text-white text-center tracking-tighter mb-2" style={{ fontFamily: 'Inter_900Black' }}>
+                                <Text
+                                    className="text-2xl font-bold text-black dark:text-white text-center mb-2"
+                                    style={{ fontFamily: 'Inter_700Bold' }}
+                                >
                                     Session Complete
                                 </Text>
-                                <Text className="text-neutral-300 text-center font-medium">
-                                    You read for <Text className="text-white font-bold">{Math.round(elapsedSeconds / 60)} minutes</Text>.
+                                <Text className="text-neutral-600 dark:text-neutral-400 text-center font-medium">
+                                    You read for <Text className="text-black dark:text-white font-bold">{Math.round(elapsedSeconds / 60)} minutes</Text>.
                                 </Text>
                             </View>
 
                             {/* Page Input */}
                             <View className="mb-8 w-full">
-                                <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 text-center">
+                                <Text className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-4 text-center">
                                     Current Page
                                 </Text>
                                 <View className="flex-row items-center justify-center">
                                     <TextInput
-                                        className="bg-black/50 border border-white/10 rounded-2xl px-8 py-6 text-center text-5xl font-black text-white w-full"
-                                        style={{ fontFamily: 'Inter_900Black' }}
+                                        className="bg-neutral-100 dark:bg-black/50 border border-black/5 dark:border-white/10 rounded-2xl px-8 py-6 text-center text-4xl font-bold text-black dark:text-white w-full"
+                                        style={{ fontFamily: 'Inter_700Bold' }}
                                         placeholder="0"
-                                        placeholderTextColor="#525252"
+                                        placeholderTextColor={isDark ? "#525252" : "#a3a3a3"}
                                         keyboardType="number-pad"
                                         value={pageInput}
                                         onChangeText={(text) => {
@@ -355,15 +338,11 @@ export default function SessionScreen() {
                                     onPress={handleUpdateProgress}
                                     className="active:scale-[0.98]"
                                 >
-                                    <GlassCard
-                                        intensity={50}
-                                        className="w-full h-14 rounded-full border-white/20"
-                                        contentClassName="items-center justify-center w-full h-full bg-white/10"
-                                    >
-                                        <Text className="text-sm font-black text-white uppercase tracking-widest">
+                                    <View className="w-full h-14 rounded-full bg-black dark:bg-white items-center justify-center shadow-lg shadow-black/20">
+                                        <Text className="text-sm font-bold text-white dark:text-black uppercase tracking-wide">
                                             Update Progress
                                         </Text>
-                                    </GlassCard>
+                                    </View>
                                 </Pressable>
 
                                 <Pressable
@@ -373,14 +352,14 @@ export default function SessionScreen() {
                                     }}
                                     className="py-4 items-center justify-center active:opacity-70"
                                 >
-                                    <Text className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
+                                    <Text className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
                                         Discard Session
                                     </Text>
                                 </Pressable>
                             </View>
-                        </GlassCard>
+                        </View>
                     </KeyboardAvoidingView>
-                </GlassCard>
+                </View>
             </Modal>
         </View>
     );
