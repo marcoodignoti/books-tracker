@@ -27,12 +27,18 @@ export function getHighResImage(url: string): string {
     return highResUrl;
 }
 
+const REQUEST_TIMEOUT_MS = 10000;
+
 export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
     if (!query.trim()) return [];
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
     try {
         const response = await fetch(
-            `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=20&printType=books`
+            `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=20&printType=books`,
+            { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -42,12 +48,18 @@ export async function searchBooks(query: string): Promise<GoogleBookVolume[]> {
         const data: GoogleBooksResponse = await response.json();
         return data.items || [];
     } catch (error) {
-        console.error('Error searching books:', error);
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.error('Error searching books: Request timed out');
+        } else {
+            console.error('Error searching books:', error instanceof Error ? error.message : 'Unknown error');
+        }
         return [];
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
-export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions'> {
+export function mapGoogleBookToBook(volume: GoogleBookVolume): Omit<Book, 'addedAt' | 'sessions' | 'notes'> {
     const { volumeInfo } = volume;
     const imageLinks = volumeInfo.imageLinks;
 

@@ -1,3 +1,4 @@
+import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -8,11 +9,10 @@ import {
     Minus,
     Pause,
     Play,
-    Plus,
+    Plus
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    Dimensions,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -38,38 +38,39 @@ export default function SessionScreen() {
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
+    const addSession = useBookStore((state) => state.addSession);
 
     const [timerSeconds, setTimerSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [pageInput, setPageInput] = useState("");
     const [inputError, setInputError] = useState("");
-    const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState(0);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const sessionStartTimeRef = useRef<number | null>(null);
 
     // Calculate elapsed time from session start
     const getElapsedSeconds = (): number => {
-        return sessionStartTimeRef.current 
+        return sessionStartTimeRef.current
             ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
             : 0;
     };
 
+    // Monitor timer completion separate from the interval tick to avoid side-effects in setState
+    useEffect(() => {
+        if (timerSeconds === 0 && isRunning) {
+            setIsRunning(false);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setElapsedSeconds(getElapsedSeconds());
+            setPageInput(book?.currentPage?.toString() || "0");
+            setShowCompletionModal(true);
+        }
+    }, [timerSeconds, isRunning, book?.currentPage]);
+
     useEffect(() => {
         if (isRunning && timerSeconds > 0) {
             timerRef.current = setInterval(() => {
-                setTimerSeconds((prev) => {
-                    if (prev <= 1) {
-                        setIsRunning(false);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        setSessionElapsedSeconds(getElapsedSeconds());
-                        // Show completion modal when timer reaches 0
-                        setPageInput(book?.currentPage?.toString() || "0");
-                        setShowCompletionModal(true);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
+                setTimerSeconds((prev) => Math.max(0, prev - 1));
                 setElapsedSeconds((prev) => prev + 1);
             }, 1000);
         }
@@ -79,25 +80,25 @@ export default function SessionScreen() {
                 clearInterval(timerRef.current);
             }
         };
-    }, [isRunning, timerSeconds, book?.currentPage]);
+    }, [isRunning, timerSeconds]);
 
     if (!book) {
         return (
-            <View className="flex-1 bg-neutral-50 items-center justify-center">
-                <Text className="text-neutral-900 text-lg">Book not found</Text>
+            <View className="flex-1 bg-black items-center justify-center">
+                <Text className="text-white text-lg font-bold">Book not found</Text>
             </View>
         );
     }
 
     const handleBack = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
         // Save session if any time was spent reading
         if (elapsedSeconds > 0 && book) {
             addSession(book.id, {
-                startedAt: sessionStartRef.current,
+                startedAt: sessionStartTimeRef.current || Date.now(),
                 duration: elapsedSeconds,
                 pagesRead: 0, // User can update page progress separately
             });
@@ -105,44 +106,32 @@ export default function SessionScreen() {
         router.back();
     };
 
-    const handleSelectAtmosphere = (atm: Atmosphere) => {
-        Haptics.selectionAsync();
-        setSelectedAtmosphere(atm);
-    };
-
-    const handleStartSession = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        setPhase("timer");
-        setIsRunning(true);
-        sessionStartTimeRef.current = Date.now();
-    };
-
     const handlePlayPause = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (!isRunning && elapsedSeconds === 0) {
             // Starting fresh session
-            sessionStartRef.current = Date.now();
+            sessionStartTimeRef.current = Date.now();
         }
         setIsRunning(!isRunning);
     };
 
     const handleAddMinute = () => {
-        Haptics.selectionAsync();
+        if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
         setTimerSeconds((prev) => prev + 60);
     };
 
     const handleSubtractMinute = () => {
-        Haptics.selectionAsync();
+        if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
         setTimerSeconds((prev) => Math.max(60, prev - 60));
     };
 
     const handleFinishSession = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
         setIsRunning(false);
-        setSessionElapsedSeconds(getElapsedSeconds());
+        setElapsedSeconds(getElapsedSeconds());
         // Pre-fill with current page and show modal
         setPageInput(book?.currentPage?.toString() || "0");
         setShowCompletionModal(true);
@@ -155,13 +144,13 @@ export default function SessionScreen() {
 
         if (isNaN(newPage) || newPage < 0) {
             setInputError("Please enter a valid page number");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
         if (newPage > book.totalPages) {
             setInputError(`Page cannot exceed ${book.totalPages}`);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
@@ -169,51 +158,59 @@ export default function SessionScreen() {
         const pagesRead = Math.max(0, newPage - book.currentPage);
 
         // Update progress in store with session data
-        updateProgress(book.id, newPage, {
-            durationSeconds: sessionElapsedSeconds,
-            startPage: book.currentPage,
-            endPage: newPage,
+        addSession(book.id, {
+            startedAt: sessionStartTimeRef.current || Date.now(),
+            duration: elapsedSeconds,
+            pagesRead: pagesRead,
         });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        updateProgress(book.id, newPage);
+        if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);
         router.back();
     };
 
     return (
         <View
-            className="flex-1 bg-neutral-50"
+            className="flex-1 bg-black"
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4">
-                <Pressable
-                    onPress={handleBack}
-                    className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md shadow-black/5 active:scale-90"
-                >
-                    <ChevronLeft size={24} color="#171717" />
+            <View className="flex-row items-center justify-between px-6 py-4 z-20">
+                {/* Floating Back Glass Button */}
+                <Pressable onPress={handleBack} className="active:scale-90">
+                    <GlassCard
+                        intensity={40}
+                        className="w-12 h-12 rounded-full border-white/20"
+                        contentClassName="items-center justify-center h-full w-full"
+                    >
+                        <ChevronLeft size={24} color="#ffffff" />
+                    </GlassCard>
                 </Pressable>
-                <View className="items-center">
-                    <Text className="text-lg font-semibold text-neutral-900">
+
+                {/* Title Pill (Flat) */}
+                <View className="bg-neutral-900 px-4 py-2 rounded-full border border-neutral-800">
+                    <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                         Reading Session
                     </Text>
-                    {elapsedSeconds > 0 && (
-                        <Text className="text-xs text-neutral-500">
-                            {formatTime(elapsedSeconds)} elapsed
-                        </Text>
-                    )}
                 </View>
-                <Pressable
-                    onPress={handleFinishSession}
-                    className="bg-neutral-900 px-4 py-2 rounded-full active:scale-95"
-                >
-                    <Text className="text-sm font-semibold text-white">Done</Text>
+
+                {/* Done Glass Pill */}
+                <Pressable onPress={handleFinishSession} className="active:scale-95">
+                    <GlassCard
+                        intensity={30}
+                        className="px-6 h-10 rounded-full border-white/20"
+                        contentClassName="items-center justify-center h-full w-full"
+                    >
+                        <Text className="text-xs font-black uppercase tracking-wider text-white">Done</Text>
+                    </GlassCard>
                 </Pressable>
             </View>
 
             {/* Content */}
             <View className="flex-1 items-center justify-center px-8">
-                {/* Book Cover */}
-                <View className="w-40 h-60 rounded-3xl overflow-hidden shadow-2xl shadow-black/20 mb-10">
+                {/* Book Cover (Small & Darkened) */}
+                <View className="w-32 h-48 rounded-sm overflow-hidden bg-neutral-900 mb-16 opacity-60 border border-white/5 shadow-2xl shadow-black">
                     {book.coverUrl ? (
                         <Image
                             source={{ uri: book.coverUrl }}
@@ -221,116 +218,169 @@ export default function SessionScreen() {
                             contentFit="cover"
                         />
                     ) : (
-                        <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                            <BookOpen size={40} color="#a3a3a3" />
+                        <View className="w-full h-full bg-neutral-800 items-center justify-center">
+                            <BookOpen size={32} color="#525252" />
                         </View>
                     )}
                 </View>
 
-                {/* Timer */}
-                <Text className="text-6xl font-light text-neutral-900 tracking-tight mb-8 font-mono">
-                    {formatTime(timerSeconds)}
-                </Text>
+                {/* Timer - Hero Swiss Type */}
+                <View className="mb-20 items-center">
+                    <Text
+                        className="text-8xl font-black text-white tracking-tighter leading-none font-variant-numeric-tabular-nums"
+                        style={{ fontFamily: 'Inter_900Black', fontSize: 96 }}
+                    >
+                        {formatTime(timerSeconds)}
+                    </Text>
+                    {elapsedSeconds > 0 && (
+                        <View className="mt-4 px-3 py-1 bg-neutral-900 rounded-sm">
+                            <Text className="text-neutral-500 font-bold text-xs tracking-widest uppercase">
+                                {formatTime(elapsedSeconds)} Elapsed
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
-                {/* Controls */}
-                <View className="flex-row items-center gap-6">
+                {/* Controls - Glass Center, Flat Sides */}
+                <View className="flex-row items-center gap-10">
+                    {/* Subtract Time */}
                     <Pressable
                         onPress={handleSubtractMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Minus size={24} color="#171717" strokeWidth={2} />
+                        <Minus size={24} color="#737373" strokeWidth={2.5} />
                     </Pressable>
 
-                    <Pressable
-                        onPress={handlePlayPause}
-                        className="w-20 h-20 bg-neutral-900 rounded-full items-center justify-center shadow-xl shadow-black/30 active:scale-90"
-                    >
-                        {isRunning ? (
-                            <Pause size={32} color="#ffffff" fill="#ffffff" />
-                        ) : (
-                            <Play size={32} color="#ffffff" fill="#ffffff" style={{ marginLeft: 4 }} />
-                        )}
+                    {/* Play/Pause - Floating Glass Circle */}
+                    <Pressable onPress={handlePlayPause} className="active:scale-95 shadow-2xl shadow-black/50">
+                        <GlassCard
+                            intensity={23}
+                            className="w-24 h-24 rounded-full border-white/20"
+                            contentClassName="items-center justify-center h-full w-full"
+                        >
+                            {isRunning ? (
+                                <Pause size={36} color="#ffffff" fill="#ffffff" />
+                            ) : (
+                                <Play size={36} color="#ffffff" fill="#ffffff" style={{ marginLeft: 4 }} />
+                            )}
+                        </GlassCard>
                     </Pressable>
 
+                    {/* Add Time */}
                     <Pressable
                         onPress={handleAddMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Plus size={24} color="#171717" strokeWidth={2} />
+                        <Plus size={24} color="#737373" strokeWidth={2.5} />
                     </Pressable>
                 </View>
             </View>
 
-            {/* Book Info */}
-            <View className="items-center pb-8">
-                <Text className="text-sm text-neutral-500" numberOfLines={1}>
-                    Reading
-                </Text>
-                <Text className="text-base font-semibold text-neutral-900" numberOfLines={1}>
+            {/* Footer Book Info */}
+            <View className="items-center pb-8 opacity-40">
+                <Text className="text-xs font-bold text-white uppercase tracking-widest" numberOfLines={1}>
                     {book.title}
                 </Text>
             </View>
 
-            {/* Session Complete Modal */}
+            {/* Session Complete Modal - Glass Overlay */}
             <Modal
                 visible={showCompletionModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowCompletionModal(false)}
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    className="flex-1"
+                <GlassCard
+                    intensity={80}
+                    tint="dark"
+                    className="flex-1 w-full h-full"
+                    contentClassName="flex-1 justify-center items-center px-6 bg-black/40"
+                    borderRadius={0}
                 >
-                    <View className="flex-1 bg-black/50 justify-center items-center px-6">
-                        <View className="bg-white w-full rounded-3xl p-6 shadow-2xl">
-                            {/* Title */}
-                            <Text className="text-2xl font-bold text-neutral-900 text-center mb-2">
-                                Session Complete
-                            </Text>
-                            <Text className="text-base text-neutral-500 text-center mb-6">
-                                You read for {Math.round(sessionElapsedSeconds / 60)} minutes.
-                            </Text>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        className="w-full"
+                    >
+                        {/* Modal Content - Floating Glass Card */}
+                        <GlassCard
+                            intensity={40}
+                            className="w-full rounded-[32px] border-white/10 overflow-hidden"
+                            contentClassName="p-8 items-center"
+                        >
+                            {/* Header */}
+                            <View className="items-center mb-8">
+                                <Text className="text-3xl font-black text-white text-center tracking-tighter mb-2" style={{ fontFamily: 'Inter_900Black' }}>
+                                    Session Complete
+                                </Text>
+                                <Text className="text-neutral-300 text-center font-medium">
+                                    You read for <Text className="text-white font-bold">{Math.round(elapsedSeconds / 60)} minutes</Text>.
+                                </Text>
+                            </View>
 
                             {/* Page Input */}
-                            <View className="mb-6">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">
-                                    What page are you on now?
+                            <View className="mb-8 w-full">
+                                <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 text-center">
+                                    Current Page
                                 </Text>
-                                <TextInput
-                                    className="bg-neutral-100 rounded-2xl px-6 py-4 text-center text-3xl font-bold text-neutral-900"
-                                    placeholder="0"
-                                    placeholderTextColor="#a3a3a3"
-                                    keyboardType="number-pad"
-                                    value={pageInput}
-                                    onChangeText={(text) => {
-                                        setPageInput(text);
-                                        setInputError("");
-                                    }}
-                                    autoFocus
-                                />
-                                <Text className="text-sm text-neutral-400 text-center mt-2">
-                                    of {book.totalPages} pages
+                                <View className="flex-row items-center justify-center">
+                                    <TextInput
+                                        className="bg-black/50 border border-white/10 rounded-2xl px-8 py-6 text-center text-5xl font-black text-white w-full"
+                                        style={{ fontFamily: 'Inter_900Black' }}
+                                        placeholder="0"
+                                        placeholderTextColor="#525252"
+                                        keyboardType="number-pad"
+                                        value={pageInput}
+                                        onChangeText={(text) => {
+                                            setPageInput(text);
+                                            setInputError("");
+                                        }}
+                                        autoFocus
+                                    />
+                                </View>
+                                <Text className="text-xs text-neutral-500 text-center mt-3 font-bold uppercase tracking-wide">
+                                    / {book.totalPages} pages
                                 </Text>
                                 {inputError ? (
-                                    <Text className="text-sm text-red-500 text-center mt-2">
-                                        {inputError}
-                                    </Text>
+                                    <View className="bg-red-500/10 py-2 rounded-lg mt-3 border border-red-500/20">
+                                        <Text className="text-xs text-red-500 text-center font-bold uppercase tracking-wide">
+                                            {inputError}
+                                        </Text>
+                                    </View>
                                 ) : null}
                             </View>
 
-                            {/* Update Button */}
-                            <Pressable
-                                onPress={handleUpdateProgress}
-                                className="bg-neutral-900 py-4 rounded-full items-center justify-center active:scale-[0.98] shadow-lg shadow-black/20"
-                            >
-                                <Text className="text-lg font-bold text-white">
-                                    Update Progress
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
+                            {/* Actions */}
+                            <View className="gap-4 w-full">
+                                <Pressable
+                                    onPress={handleUpdateProgress}
+                                    className="active:scale-[0.98]"
+                                >
+                                    <GlassCard
+                                        intensity={50}
+                                        className="w-full h-14 rounded-full border-white/20"
+                                        contentClassName="items-center justify-center w-full h-full bg-white/10"
+                                    >
+                                        <Text className="text-sm font-black text-white uppercase tracking-widest">
+                                            Update Progress
+                                        </Text>
+                                    </GlassCard>
+                                </Pressable>
+
+                                <Pressable
+                                    onPress={() => {
+                                        setShowCompletionModal(false);
+                                        router.back();
+                                    }}
+                                    className="py-4 items-center justify-center active:opacity-70"
+                                >
+                                    <Text className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
+                                        Discard Session
+                                    </Text>
+                                </Pressable>
+                            </View>
+                        </GlassCard>
+                    </KeyboardAvoidingView>
+                </GlassCard>
             </Modal>
         </View>
     );

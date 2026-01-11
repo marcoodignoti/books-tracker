@@ -28,19 +28,32 @@ export default function SearchBookPreviewScreen() {
 
             try {
                 setIsLoading(true);
-                const response = await fetch(
-                    `https://www.googleapis.com/books/v1/volumes/${id}`
-                );
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch book details");
+                try {
+                    const response = await fetch(
+                        `https://www.googleapis.com/books/v1/volumes/${id}`,
+                        { signal: controller.signal }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch book details");
+                    }
+
+                    const data: GoogleBookVolume = await response.json();
+                    setBookData(data);
+                } finally {
+                    clearTimeout(timeoutId);
                 }
-
-                const data: GoogleBookVolume = await response.json();
-                setBookData(data);
             } catch (err) {
-                setError("Failed to load book details");
-                console.error("Error fetching book details:", err);
+                if (err instanceof Error && err.name === 'AbortError') {
+                    setError("Request timed out");
+                    console.error("Error fetching book details: Request timed out");
+                } else {
+                    setError("Failed to load book details");
+                    console.error("Error fetching book details:", err instanceof Error ? err.message : "Unknown error");
+                }
             } finally {
                 setIsLoading(false);
             }

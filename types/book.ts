@@ -2,10 +2,23 @@ export type BookStatus = 'want-to-read' | 'reading' | 'finished';
 
 export interface ReadingSession {
   id: string;
+<<<<<<< HEAD
+  startedAt: number;
+  duration: number;
+  pagesRead: number;
+}
+
+export interface Note {
+  id: string;
+  content: string;
+  page?: number;
+  createdAt: number;
+=======
   date: string; // ISO string
   durationSeconds: number;
   startPage: number;
   endPage: number;
+>>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
 }
 
 export interface Book {
@@ -18,6 +31,10 @@ export interface Book {
   status: BookStatus;
   addedAt: number;
   sessions: ReadingSession[];
+<<<<<<< HEAD
+  notes: Note[];
+=======
+>>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
 }
 
 export interface GoogleBookVolume {
