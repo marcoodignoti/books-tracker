@@ -125,7 +125,7 @@ function BookCard({ book, isHero }: BookCardProps) {
     );
 }
 
-export default function HomeScreen() {
+export default function LibraryScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const books = useBookStore((state) => state.books);
@@ -153,7 +153,7 @@ export default function HomeScreen() {
                 {/* Header */}
                 <View className="flex-row items-center justify-between px-4 py-4">
                     <Text className="text-3xl font-bold tracking-tight text-neutral-900">
-                        Your Library
+                        Library
                     </Text>
                     <Pressable
                         onPress={handleAddBook}
@@ -168,7 +168,7 @@ export default function HomeScreen() {
                     <BookCard book={currentlyReading[0]} isHero />
                 )}
 
-                {/* Additional Currently Reading Books (if more than one) */}
+                {/* Additional Currently Reading Books */}
                 {currentlyReading.length > 1 && (
                     <View className="mb-6">
                         <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 px-4 mb-3">
