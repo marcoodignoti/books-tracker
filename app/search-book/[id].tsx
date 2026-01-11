@@ -1,30 +1,16 @@
+import { BookImmersiveLayout } from "@/components/BookImmersiveLayout";
 import { getHighResImage, mapGoogleBookToBook } from "@/services/googleBooks";
 import { useBookStore } from "@/store/useBookStore";
 import { GoogleBookVolume } from "@/types/book";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { BookOpen, Check, ChevronLeft, Plus, Star } from "lucide-react-native";
+import { BookOpen, Check, Plus, Star } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    Dimensions,
-    Pressable,
-    ScrollView,
-    Text,
-    View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const COVER_HEIGHT = SCREEN_HEIGHT * 0.6;
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 export default function SearchBookPreviewScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
 
     const [bookData, setBookData] = useState<GoogleBookVolume | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +62,18 @@ export default function SearchBookPreviewScreen() {
         fetchBookDetails();
     }, [id]);
 
+    const stripHtml = (html: string) => {
+        let text = html.replace(/<[^>]*>/g, "");
+        text = text
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, " ");
+        return text;
+    };
+
     const handleBack = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
@@ -90,21 +88,6 @@ export default function SearchBookPreviewScreen() {
 
     const isBookInLibrary = () => {
         return books.some((book) => book.id === id);
-    };
-
-    // Helper function to strip HTML tags and decode entities from description
-    const stripHtml = (html: string) => {
-        // Remove HTML tags
-        let text = html.replace(/<[^>]*>/g, "");
-        // Decode common HTML entities
-        text = text
-            .replace(/&amp;/g, "&")
-            .replace(/&lt;/g, "<")
-            .replace(/&gt;/g, ">")
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&nbsp;/g, " ");
-        return text;
     };
 
     if (isLoading) {
@@ -136,7 +119,6 @@ export default function SearchBookPreviewScreen() {
     const { volumeInfo } = bookData;
     const imageLinks = volumeInfo.imageLinks;
 
-    // Get high-res cover image
     const rawCoverUrl =
         imageLinks?.extraLarge ||
         imageLinks?.large ||
@@ -149,44 +131,78 @@ export default function SearchBookPreviewScreen() {
     const inLibrary = isBookInLibrary();
 
     return (
-        <View className="flex-1 bg-black">
-            {/* Background Cover Image */}
-            <View className="absolute top-0 left-0 right-0" style={{ height: COVER_HEIGHT }}>
-                {coverUrl ? (
-                    <Image
-                        source={{ uri: coverUrl }}
-                        style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
-                        contentFit="cover"
-                    />
-                ) : (
-                    // Dark abstract gradient fallback for missing covers
-                    <LinearGradient
-                        colors={["#374151", "#1f2937", "#111827"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
-                    />
-                )}
-                {/* Gradient overlay: transparent to black */}
-                <LinearGradient
-                    colors={["transparent", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.9)", "#000000"]}
-                    locations={[0, 0.4, 0.7, 1]}
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                    }}
-                />
-            </View>
+        <BookImmersiveLayout
+            coverUrl={coverUrl}
+            title={volumeInfo.title}
+            author={volumeInfo.authors?.join(", ") || "Unknown Author"}
+            statsContent={
+                <>
+                    {volumeInfo.pageCount && (
+                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                            <Text className="text-base font-semibold text-white">
+                                {volumeInfo.pageCount} Pages
+                            </Text>
+                        </View>
+                    )}
+                    {volumeInfo.averageRating && (
+                        <View className="bg-white/10 px-4 py-2 rounded-full flex-row items-center gap-1">
+                            <Star size={16} color="#ffffff" fill="#ffffff" />
+                            <Text className="text-base font-semibold text-white">
+                                {volumeInfo.averageRating.toFixed(1)}
+                            </Text>
+                        </View>
+                    )}
+                    {volumeInfo.categories && volumeInfo.categories.length > 0 && (
+                        <View className="bg-white/10 px-4 py-2 rounded-full">
+                            <Text className="text-base font-semibold text-white">
+                                {volumeInfo.categories[0]}
+                            </Text>
+                        </View>
+                    )}
+                </>
+            }
+        >
+            {volumeInfo.description && (
+                <View className="mb-4">
+                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                        Description
+                    </Text>
+                    <Text className="text-base text-neutral-700 leading-6">
+                        {stripHtml(volumeInfo.description)}
+                    </Text>
+                </View>
+            )}
 
-            {/* Floating Back Button with Blur */}
-            <View
-                className="absolute z-10"
-                style={{ top: insets.top + 8, left: 16 }}
-            >
+            {(volumeInfo.publisher || volumeInfo.publishedDate) && (
+                <View className="mb-4">
+                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                        Publication Details
+                    </Text>
+                    {volumeInfo.publisher && (
+                        <Text className="text-base text-neutral-700 mb-1">
+                            <Text className="font-semibold">Publisher:</Text>{" "}
+                            {volumeInfo.publisher}
+                        </Text>
+                    )}
+                    {volumeInfo.publishedDate && (
+                        <Text className="text-base text-neutral-700">
+                            <Text className="font-semibold">Published:</Text>{" "}
+                            {volumeInfo.publishedDate}
+                        </Text>
+                    )}
+                </View>
+            )}
+
+            {inLibrary ? (
+                <View className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 mb-4">
+                    <Check size={22} color="#22c55e" strokeWidth={2.5} />
+                    <Text className="text-lg font-bold text-neutral-600">
+                        Already in Library
+                    </Text>
+                </View>
+            ) : (
                 <Pressable
+<<<<<<< HEAD
                     onPress={handleBack}
                     className="overflow-hidden rounded-xl active:scale-90"
                 >
@@ -310,5 +326,17 @@ export default function SearchBookPreviewScreen() {
                 </View>
             </View>
         </View>
+=======
+                    onPress={handleAddBook}
+                    className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-4"
+                >
+                    <Plus size={22} color="#ffffff" strokeWidth={2.5} />
+                    <Text className="text-lg font-bold text-white">
+                        Add to Library
+                    </Text>
+                </Pressable>
+            )}
+        </BookImmersiveLayout>
+>>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
     );
 }
