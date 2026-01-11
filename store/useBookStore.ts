@@ -1,18 +1,13 @@
-import { Book, BookStatus, ReadingSession } from '@/types/book';
+import { Book, BookStatus, Note, ReadingSession } from '@/types/book';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-interface SessionData {
-    durationSeconds: number;
-    startPage: number;
-    endPage: number;
-}
-
 interface BookStore {
     books: Book[];
-    addBook: (book: Omit<Book, 'addedAt' | 'sessions'>) => void;
-    updateProgress: (id: string, currentPage: number, sessionData?: SessionData) => void;
+    addBook: (book: Omit<Book, 'addedAt' | 'sessions' | 'notes'>) => void;
+    updateBook: (id: string, updates: Partial<Pick<Book, 'title' | 'author' | 'totalPages' | 'coverUrl'>>) => void;
+    updateProgress: (id: string, currentPage: number) => void;
     updateStatus: (id: string, status: BookStatus) => void;
     deleteBook: (id: string) => void;
     addSession: (bookId: string, session: Omit<ReadingSession, 'id'>) => void;
@@ -39,35 +34,30 @@ export const useBookStore = create<BookStore>()(
                             ...book,
                             addedAt: Date.now(),
                             sessions: [],
+                            notes: [],
                         },
                     ],
                 }));
             },
 
-            updateProgress: (id, currentPage, sessionData) => {
+            updateBook: (id, updates) => {
+                set((state) => ({
+                    books: state.books.map((book) =>
+                        book.id === id ? { ...book, ...updates } : book
+                    ),
+                }));
+            },
+
+            updateProgress: (id, currentPage) => {
                 set((state) => ({
                     books: state.books.map((book) => {
                         if (book.id !== id) return book;
-                        
-                        const updatedBook: Book = {
+
+                        return {
                             ...book,
                             currentPage,
                             status: currentPage >= book.totalPages ? 'finished' : 'reading',
                         };
-                        
-                        // Add session if session data is provided
-                        if (sessionData) {
-                            const newSession: ReadingSession = {
-                                id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-                                date: new Date().toISOString(),
-                                durationSeconds: sessionData.durationSeconds,
-                                startPage: sessionData.startPage,
-                                endPage: sessionData.endPage,
-                            };
-                            updatedBook.sessions = [...(book.sessions || []), newSession];
-                        }
-                        
-                        return updatedBook;
                     }),
                 }));
             },

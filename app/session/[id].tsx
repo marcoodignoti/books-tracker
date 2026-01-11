@@ -12,14 +12,13 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    Dimensions,
     KeyboardAvoidingView,
     Modal,
     Platform,
     Pressable,
     Text,
     TextInput,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -38,19 +37,20 @@ export default function SessionScreen() {
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
+    const addSession = useBookStore((state) => state.addSession);
 
     const [timerSeconds, setTimerSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [pageInput, setPageInput] = useState("");
     const [inputError, setInputError] = useState("");
-    const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState(0);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const sessionStartTimeRef = useRef<number | null>(null);
 
     // Calculate elapsed time from session start
     const getElapsedSeconds = (): number => {
-        return sessionStartTimeRef.current 
+        return sessionStartTimeRef.current
             ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
             : 0;
     };
@@ -62,7 +62,7 @@ export default function SessionScreen() {
                     if (prev <= 1) {
                         setIsRunning(false);
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        setSessionElapsedSeconds(getElapsedSeconds());
+                        setElapsedSeconds(getElapsedSeconds());
                         // Show completion modal when timer reaches 0
                         setPageInput(book?.currentPage?.toString() || "0");
                         setShowCompletionModal(true);
@@ -97,7 +97,7 @@ export default function SessionScreen() {
         // Save session if any time was spent reading
         if (elapsedSeconds > 0 && book) {
             addSession(book.id, {
-                startedAt: sessionStartRef.current,
+                startedAt: sessionStartTimeRef.current || Date.now(),
                 duration: elapsedSeconds,
                 pagesRead: 0, // User can update page progress separately
             });
@@ -105,23 +105,13 @@ export default function SessionScreen() {
         router.back();
     };
 
-    const handleSelectAtmosphere = (atm: Atmosphere) => {
-        Haptics.selectionAsync();
-        setSelectedAtmosphere(atm);
-    };
 
-    const handleStartSession = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        setPhase("timer");
-        setIsRunning(true);
-        sessionStartTimeRef.current = Date.now();
-    };
 
     const handlePlayPause = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (!isRunning && elapsedSeconds === 0) {
             // Starting fresh session
-            sessionStartRef.current = Date.now();
+            sessionStartTimeRef.current = Date.now();
         }
         setIsRunning(!isRunning);
     };
@@ -142,7 +132,7 @@ export default function SessionScreen() {
             clearInterval(timerRef.current);
         }
         setIsRunning(false);
-        setSessionElapsedSeconds(getElapsedSeconds());
+        setElapsedSeconds(getElapsedSeconds());
         // Pre-fill with current page and show modal
         setPageInput(book?.currentPage?.toString() || "0");
         setShowCompletionModal(true);
@@ -169,11 +159,14 @@ export default function SessionScreen() {
         const pagesRead = Math.max(0, newPage - book.currentPage);
 
         // Update progress in store with session data
-        updateProgress(book.id, newPage, {
-            durationSeconds: sessionElapsedSeconds,
-            startPage: book.currentPage,
-            endPage: newPage,
+        // Update progress in store with session data
+        addSession(book.id, {
+            startedAt: sessionStartTimeRef.current || Date.now(),
+            duration: elapsedSeconds,
+            pagesRead: pagesRead,
         });
+
+        updateProgress(book.id, newPage);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);
         router.back();
@@ -289,7 +282,7 @@ export default function SessionScreen() {
                                 Session Complete
                             </Text>
                             <Text className="text-base text-neutral-500 text-center mb-6">
-                                You read for {Math.round(sessionElapsedSeconds / 60)} minutes.
+                                You read for {Math.round(elapsedSeconds / 60)} minutes.
                             </Text>
 
                             {/* Page Input */}
