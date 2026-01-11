@@ -4,7 +4,7 @@ import { GoogleBookVolume } from "@/types/book";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Href, useRouter } from "expo-router";
-import { BookOpen, Check, ChevronRight, Plus, ScanBarcode, Search, X } from "lucide-react-native";
+import { BookOpen, Check, Plus, ScanBarcode, Search, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -65,15 +65,15 @@ export default function SearchScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+        <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
             {/* Header */}
-            <View className="flex-row items-center px-4 py-3 border-b border-neutral-100">
-                <View className="flex-1 flex-row items-center bg-neutral-100 rounded-xl px-4 py-3">
-                    <Search size={20} color="#a3a3a3" strokeWidth={2} />
+            <View className="flex-row items-center px-4 py-4 border-b border-neutral-900">
+                <View className="flex-1 flex-row items-center bg-neutral-900 rounded-full px-5 py-4 border border-neutral-800">
+                    <Search size={20} color="#737373" strokeWidth={2} />
                     <TextInput
-                        className="flex-1 ml-3 text-base text-neutral-900"
-                        placeholder="Search for books..."
-                        placeholderTextColor="#a3a3a3"
+                        className="flex-1 ml-3 text-base text-white font-medium"
+                        placeholder="Search title, author, isbn..."
+                        placeholderTextColor="#525252"
                         value={query}
                         onChangeText={setQuery}
                         onSubmitEditing={handleSearch}
@@ -81,10 +81,11 @@ export default function SearchScreen() {
                         autoFocus
                         autoCapitalize="none"
                         autoCorrect={false}
+                        cursorColor="#ffffff"
                     />
                     {query.length > 0 && (
                         <Pressable onPress={() => setQuery("")}>
-                            <X size={18} color="#a3a3a3" />
+                            <X size={18} color="#737373" />
                         </Pressable>
                     )}
                 </View>
@@ -93,12 +94,12 @@ export default function SearchScreen() {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         router.push("/scan" as Href);
                     }}
-                    className="ml-2 w-10 h-10 bg-neutral-900 rounded-xl items-center justify-center active:scale-90"
+                    className="ml-3 w-12 h-12 bg-white rounded-full items-center justify-center active:scale-90"
                 >
-                    <ScanBarcode size={20} color="#ffffff" />
+                    <ScanBarcode size={20} color="#000000" strokeWidth={2.5} />
                 </Pressable>
-                <Pressable onPress={handleClose} className="ml-2">
-                    <Text className="text-base font-semibold text-neutral-900">Cancel</Text>
+                <Pressable onPress={handleClose} className="ml-4">
+                    <Text className="text-base font-bold text-neutral-400">Cancel</Text>
                 </Pressable>
             </View>
 
@@ -107,29 +108,30 @@ export default function SearchScreen() {
                 className="flex-1"
                 contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
                 keyboardShouldPersistTaps="handled"
+                indicatorStyle="white"
             >
                 {isLoading && (
-                    <View className="py-12 items-center">
-                        <ActivityIndicator size="large" color="#171717" />
-                        <Text className="text-neutral-500 mt-3">Searching books...</Text>
+                    <View className="py-20 items-center">
+                        <ActivityIndicator size="large" color="#ffffff" />
+                        <Text className="text-neutral-500 mt-4 font-medium uppercase tracking-widest text-xs">Searching...</Text>
                     </View>
                 )}
 
                 {!isLoading && hasSearched && results.length === 0 && (
-                    <View className="py-12 items-center px-8">
-                        <BookOpen size={48} color="#d4d4d4" strokeWidth={1.5} />
-                        <Text className="text-lg font-semibold text-neutral-900 mt-4">
+                    <View className="py-20 items-center px-8 opacity-50">
+                        <BookOpen size={48} color="#525252" strokeWidth={1.5} />
+                        <Text className="text-lg font-bold text-white mt-6">
                             No books found
                         </Text>
-                        <Text className="text-neutral-500 text-center mt-1">
-                            Try a different search term
+                        <Text className="text-neutral-500 text-center mt-2">
+                            Try searching for something else
                         </Text>
                     </View>
                 )}
 
                 {!isLoading && results.length > 0 && (
-                    <View className="px-4 py-4">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">
+                    <View className="px-4 py-6">
+                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-6 px-2">
                             {results.length} Results
                         </Text>
 
@@ -142,10 +144,10 @@ export default function SearchScreen() {
                                 <Pressable
                                     key={volume.id}
                                     onPress={() => handleViewDetails(volume.id)}
-                                    className="flex-row bg-white rounded-2xl p-3 mb-3 border border-neutral-100 active:bg-neutral-50"
+                                    className="flex-row bg-neutral-900 rounded-2xl p-4 mb-3 border border-neutral-800 active:bg-neutral-800"
                                 >
                                     {/* Cover */}
-                                    <View className="w-16 h-24 rounded-xl overflow-hidden shadow-lg shadow-black/10">
+                                    <View className="w-16 h-24 rounded-lg overflow-hidden bg-neutral-800">
                                         {coverUrl ? (
                                             <Image
                                                 source={{ uri: coverUrl }}
@@ -153,40 +155,36 @@ export default function SearchScreen() {
                                                 contentFit="cover"
                                             />
                                         ) : (
-                                            <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                                                <BookOpen size={20} color="#a3a3a3" />
+                                            <View className="w-full h-full items-center justify-center">
+                                                <BookOpen size={20} color="#525252" />
                                             </View>
                                         )}
                                     </View>
 
                                     {/* Info */}
-                                    <View className="flex-1 ml-3 justify-center">
+                                    <View className="flex-1 ml-4 justify-center">
                                         <Text
-                                            className="text-base font-semibold text-neutral-900"
+                                            className="text-lg font-bold text-white leading-tight mb-1"
                                             numberOfLines={2}
+                                            style={{ fontFamily: 'Inter_700Bold' }}
                                         >
                                             {volume.volumeInfo.title}
                                         </Text>
-                                        <Text className="text-sm text-neutral-500" numberOfLines={1}>
+                                        <Text className="text-sm text-neutral-400 font-medium" numberOfLines={1}>
                                             {volume.volumeInfo.authors?.join(", ") || "Unknown Author"}
                                         </Text>
                                         {volume.volumeInfo.pageCount ? (
-                                            <Text className="text-xs text-neutral-400 mt-1">
-                                                {volume.volumeInfo.pageCount} pages
+                                            <Text className="text-xs text-neutral-600 mt-2 font-bold uppercase">
+                                                {volume.volumeInfo.pageCount} pgs
                                             </Text>
                                         ) : null}
                                     </View>
 
-                                    {/* ChevronRight Icon */}
-                                    <View className="justify-center ml-2 mr-2">
-                                        <ChevronRight size={20} color="#a3a3a3" strokeWidth={2} />
-                                    </View>
-
                                     {/* Add Button */}
-                                    <View className="justify-center">
+                                    <View className="justify-center pl-2">
                                         {inLibrary ? (
-                                            <View className="w-10 h-10 bg-neutral-100 rounded-full items-center justify-center">
-                                                <Check size={20} color="#22c55e" strokeWidth={2.5} />
+                                            <View className="w-10 h-10 bg-green-900/20 rounded-full items-center justify-center border border-green-900/50">
+                                                <Check size={18} color="#22c55e" strokeWidth={3} />
                                             </View>
                                         ) : (
                                             <Pressable
@@ -194,9 +192,9 @@ export default function SearchScreen() {
                                                     e.stopPropagation();
                                                     handleAddBook(volume);
                                                 }}
-                                                className="w-10 h-10 bg-neutral-900 rounded-full items-center justify-center active:scale-90"
+                                                className="w-10 h-10 bg-white rounded-full items-center justify-center active:scale-90"
                                             >
-                                                <Plus size={20} color="#ffffff" strokeWidth={2.5} />
+                                                <Plus size={20} color="#000000" strokeWidth={3} />
                                             </Pressable>
                                         )}
                                     </View>
@@ -207,12 +205,12 @@ export default function SearchScreen() {
                 )}
 
                 {!isLoading && !hasSearched && (
-                    <View className="py-12 items-center px-8">
-                        <Search size={48} color="#d4d4d4" strokeWidth={1.5} />
-                        <Text className="text-lg font-semibold text-neutral-900 mt-4">
-                            Find Your Next Read
+                    <View className="py-20 items-center px-8 opacity-40">
+                        <Search size={48} color="#525252" strokeWidth={1.5} />
+                        <Text className="text-lg font-bold text-white mt-6">
+                            Find Your Book
                         </Text>
-                        <Text className="text-neutral-500 text-center mt-1">
+                        <Text className="text-neutral-500 text-center mt-2">
                             Search by title, author, or ISBN
                         </Text>
                     </View>

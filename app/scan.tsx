@@ -79,7 +79,7 @@ export default function ScanScreen() {
     // Permission handling
     if (!permission) {
         return (
-            <View className="flex-1 bg-neutral-900 items-center justify-center">
+            <View className="flex-1 bg-black items-center justify-center">
                 <ActivityIndicator size="large" color="#ffffff" />
             </View>
         );
@@ -87,27 +87,27 @@ export default function ScanScreen() {
 
     if (!permission.granted) {
         return (
-            <View className="flex-1 bg-neutral-900" style={{ paddingTop: insets.top }}>
+            <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
                 <View className="flex-row items-center px-4 py-4">
                     <Pressable
                         onPress={handleBack}
-                        className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:scale-90"
+                        className="w-12 h-12 bg-neutral-900 rounded-full items-center justify-center active:scale-90"
                     >
                         <ChevronLeft size={24} color="#ffffff" />
                     </Pressable>
                 </View>
                 <View className="flex-1 items-center justify-center px-8">
-                    <Text className="text-white text-xl font-bold text-center mb-4">
-                        Camera Permission Required
+                    <Text className="text-white text-3xl font-black text-center mb-4 tracking-tighter" style={{ fontFamily: 'Inter_900Black' }}>
+                        Camera Access
                     </Text>
-                    <Text className="text-white/70 text-center mb-8">
-                        We need camera access to scan book barcodes
+                    <Text className="text-neutral-400 text-center mb-10 font-medium">
+                        To scan barcodes, we need permission to access your camera.
                     </Text>
                     <Pressable
                         onPress={requestPermission}
-                        className="bg-white px-8 py-4 rounded-2xl active:scale-95"
+                        className="bg-white px-8 py-5 rounded-full active:scale-95"
                     >
-                        <Text className="text-neutral-900 font-bold text-lg">Grant Permission</Text>
+                        <Text className="text-black font-bold text-lg uppercase tracking-wide">Grant Permission</Text>
                     </Pressable>
                 </View>
             </View>
@@ -115,7 +115,7 @@ export default function ScanScreen() {
     }
 
     return (
-        <View className="flex-1 bg-neutral-900">
+        <View className="flex-1 bg-black">
             {/* Camera View */}
             <CameraView
                 style={{ flex: 1 }}
@@ -129,25 +129,29 @@ export default function ScanScreen() {
 
             {/* Header Overlay */}
             <View
-                className="absolute top-0 left-0 right-0 px-4 py-4"
-                style={{ paddingTop: insets.top }}
+                className="absolute top-0 left-0 right-0 px-6 py-6"
+                style={{ paddingTop: insets.top + 10 }}
             >
                 <View className="flex-row items-center justify-between">
                     <Pressable
                         onPress={handleBack}
-                        className="w-10 h-10 bg-black/50 rounded-full items-center justify-center active:scale-90"
+                        className="w-12 h-12 bg-black/60 rounded-full items-center justify-center backdrop-blur-md active:scale-90 border border-white/10"
                     >
                         <ChevronLeft size={24} color="#ffffff" />
                     </Pressable>
-                    <Text className="text-white text-lg font-semibold">Scan ISBN</Text>
+
+                    <View className="bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+                        <Text className="text-white text-xs font-bold uppercase tracking-widest">Scan ISBN</Text>
+                    </View>
+
                     <Pressable
                         onPress={toggleTorch}
-                        className="w-10 h-10 bg-black/50 rounded-full items-center justify-center active:scale-90"
+                        className="w-12 h-12 bg-black/60 rounded-full items-center justify-center backdrop-blur-md active:scale-90 border border-white/10"
                     >
                         {torchEnabled ? (
-                            <Zap size={24} color="#fbbf24" fill="#fbbf24" />
+                            <Zap size={20} color="#fbbf24" fill="#fbbf24" />
                         ) : (
-                            <ZapOff size={24} color="#ffffff" />
+                            <ZapOff size={20} color="#ffffff" />
                         )}
                     </Pressable>
                 </View>
@@ -155,49 +159,51 @@ export default function ScanScreen() {
 
             {/* Scan Guide */}
             {!scanned && !isLoading && (
-                <View className="absolute inset-0 items-center justify-center">
-                    <View className="w-64 h-32 border-2 border-white/50 rounded-2xl" />
-                    <Text className="text-white/70 mt-4 text-center">
-                        Position the barcode inside the frame
-                    </Text>
+                <View className="absolute inset-0 items-center justify-center pointer-events-none">
+                    <View className="w-72 h-40 border-2 border-white/30 rounded-3xl" />
+                    <View className="bg-black/60 px-4 py-2 rounded-full mt-6 backdrop-blur-md">
+                        <Text className="text-white/80 text-xs font-bold uppercase tracking-widest">
+                            Align Barcode
+                        </Text>
+                    </View>
                 </View>
             )}
 
             {/* Loading State */}
             {isLoading && (
-                <View className="absolute inset-0 bg-black/70 items-center justify-center">
+                <View className="absolute inset-0 bg-black/80 items-center justify-center">
                     <ActivityIndicator size="large" color="#ffffff" />
-                    <Text className="text-white mt-4">Searching...</Text>
+                    <Text className="text-white mt-4 font-bold uppercase tracking-widest text-xs">Accessing Database...</Text>
                 </View>
             )}
 
             {/* Result Panel */}
             {(result || error) && !isLoading && (
                 <View
-                    className="absolute bottom-0 left-0 right-0 bg-neutral-900 rounded-t-3xl p-6"
-                    style={{ paddingBottom: insets.bottom + 16 }}
+                    className="absolute bottom-0 left-0 right-0 bg-neutral-900 rounded-t-[32px] p-8 border-t border-neutral-800"
+                    style={{ paddingBottom: insets.bottom + 20 }}
                 >
                     {error ? (
                         <>
-                            <View className="items-center mb-4">
-                                <View className="w-16 h-16 bg-red-500/20 rounded-full items-center justify-center mb-3">
+                            <View className="items-center mb-6">
+                                <View className="w-16 h-16 bg-red-900/20 rounded-full items-center justify-center mb-4 border border-red-900/50">
                                     <X size={32} color="#ef4444" />
                                 </View>
-                                <Text className="text-white text-lg font-semibold text-center">
+                                <Text className="text-white text-lg font-bold text-center">
                                     {error}
                                 </Text>
                             </View>
                             <Pressable
                                 onPress={handleScanAgain}
-                                className="bg-white rounded-2xl py-4 items-center active:scale-[0.98]"
+                                className="bg-white rounded-full py-5 items-center active:scale-[0.98]"
                             >
-                                <Text className="text-lg font-bold text-neutral-900">Scan Again</Text>
+                                <Text className="text-lg font-black text-black uppercase tracking-wide">Scan Again</Text>
                             </Pressable>
                         </>
                     ) : result && (
                         <>
-                            <View className="flex-row mb-4">
-                                <View className="w-20 h-28 rounded-xl overflow-hidden shadow-lg shadow-black/20">
+                            <View className="flex-row mb-8">
+                                <View className="w-24 h-36 rounded-xl overflow-hidden bg-neutral-800 shadow-xl shadow-black/50">
                                     {result.volumeInfo.imageLinks?.thumbnail ? (
                                         <Image
                                             source={{ uri: result.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") }}
@@ -205,45 +211,50 @@ export default function ScanScreen() {
                                             contentFit="cover"
                                         />
                                     ) : (
-                                        <View className="w-full h-full bg-neutral-700 items-center justify-center">
-                                            <BookOpen size={24} color="#a3a3a3" />
+                                        <View className="w-full h-full bg-neutral-800 items-center justify-center">
+                                            <BookOpen size={24} color="#525252" />
                                         </View>
                                     )}
                                 </View>
-                                <View className="flex-1 ml-4 justify-center">
-                                    <Text className="text-white text-lg font-bold" numberOfLines={2}>
+                                <View className="flex-1 ml-5 justify-center">
+                                    <View className="bg-white self-start px-2 py-1 rounded-md mb-2">
+                                        <Text className="text-black text-[10px] font-bold uppercase tracking-widest">
+                                            Found
+                                        </Text>
+                                    </View>
+                                    <Text className="text-2xl font-black text-white leading-tight mb-2 tracking-tight" numberOfLines={2}>
                                         {result.volumeInfo.title}
                                     </Text>
-                                    <Text className="text-white/70" numberOfLines={1}>
+                                    <Text className="text-neutral-400 font-medium" numberOfLines={1}>
                                         {result.volumeInfo.authors?.join(", ") || "Unknown Author"}
                                     </Text>
                                     {result.volumeInfo.pageCount && (
-                                        <Text className="text-white/50 text-sm mt-1">
+                                        <Text className="text-neutral-600 text-xs mt-1 font-bold uppercase tracking-widest">
                                             {result.volumeInfo.pageCount} pages
                                         </Text>
                                     )}
                                 </View>
                             </View>
 
-                            <View className="flex-row gap-3">
+                            <View className="flex-row gap-4">
                                 <Pressable
                                     onPress={handleScanAgain}
-                                    className="flex-1 bg-white/20 rounded-2xl py-4 items-center active:scale-[0.98]"
+                                    className="flex-1 bg-neutral-800 rounded-full py-4 items-center active:scale-[0.98] border border-neutral-700"
                                 >
-                                    <Text className="text-lg font-semibold text-white">Scan Again</Text>
+                                    <Text className="text-sm font-bold text-white uppercase tracking-wide">Retry</Text>
                                 </Pressable>
                                 {isBookInLibrary ? (
-                                    <View className="flex-1 bg-green-500/20 rounded-2xl py-4 flex-row items-center justify-center gap-2">
-                                        <Check size={20} color="#22c55e" />
-                                        <Text className="text-lg font-semibold text-green-500">In Library</Text>
+                                    <View className="flex-1 bg-green-900/30 rounded-full py-4 flex-row items-center justify-center gap-2 border border-green-900/50">
+                                        <Check size={18} color="#22c55e" strokeWidth={3} />
+                                        <Text className="text-sm font-bold text-green-500 uppercase tracking-wide">In Library</Text>
                                     </View>
                                 ) : (
                                     <Pressable
                                         onPress={handleAddBook}
-                                        className="flex-1 bg-white rounded-2xl py-4 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                                        className="flex-[2] bg-white rounded-full py-4 flex-row items-center justify-center gap-2 active:scale-[0.98]"
                                     >
-                                        <Plus size={20} color="#171717" />
-                                        <Text className="text-lg font-bold text-neutral-900">Add</Text>
+                                        <Plus size={20} color="#000000" strokeWidth={3} />
+                                        <Text className="text-lg font-black text-black uppercase tracking-wide">Add Book</Text>
                                     </Pressable>
                                 )}
                             </View>

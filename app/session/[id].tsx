@@ -8,7 +8,7 @@ import {
     Minus,
     Pause,
     Play,
-    Plus,
+    Plus
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -18,7 +18,7 @@ import {
     Pressable,
     Text,
     TextInput,
-    View
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -83,8 +83,8 @@ export default function SessionScreen() {
 
     if (!book) {
         return (
-            <View className="flex-1 bg-neutral-50 items-center justify-center">
-                <Text className="text-neutral-900 text-lg">Book not found</Text>
+            <View className="flex-1 bg-black items-center justify-center">
+                <Text className="text-white text-lg font-bold">Book not found</Text>
             </View>
         );
     }
@@ -104,8 +104,6 @@ export default function SessionScreen() {
         }
         router.back();
     };
-
-
 
     const handlePlayPause = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -159,7 +157,6 @@ export default function SessionScreen() {
         const pagesRead = Math.max(0, newPage - book.currentPage);
 
         // Update progress in store with session data
-        // Update progress in store with session data
         addSession(book.id, {
             startedAt: sessionStartTimeRef.current || Date.now(),
             duration: elapsedSeconds,
@@ -174,39 +171,36 @@ export default function SessionScreen() {
 
     return (
         <View
-            className="flex-1 bg-neutral-50"
+            className="flex-1 bg-black"
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4">
+            <View className="flex-row items-center justify-between px-6 py-4">
                 <Pressable
                     onPress={handleBack}
-                    className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-md shadow-black/5 active:scale-90"
+                    className="w-12 h-12 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                 >
-                    <ChevronLeft size={24} color="#171717" />
+                    <ChevronLeft size={24} color="#ffffff" />
                 </Pressable>
-                <View className="items-center">
-                    <Text className="text-lg font-semibold text-neutral-900">
+
+                <View className="bg-neutral-900 px-4 py-2 rounded-full border border-neutral-800">
+                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400">
                         Reading Session
                     </Text>
-                    {elapsedSeconds > 0 && (
-                        <Text className="text-xs text-neutral-500">
-                            {formatTime(elapsedSeconds)} elapsed
-                        </Text>
-                    )}
                 </View>
+
                 <Pressable
                     onPress={handleFinishSession}
-                    className="bg-neutral-900 px-4 py-2 rounded-full active:scale-95"
+                    className="bg-white px-6 py-3 rounded-full active:scale-95"
                 >
-                    <Text className="text-sm font-semibold text-white">Done</Text>
+                    <Text className="text-xs font-black uppercase tracking-wider text-black">Done</Text>
                 </Pressable>
             </View>
 
             {/* Content */}
             <View className="flex-1 items-center justify-center px-8">
-                {/* Book Cover */}
-                <View className="w-40 h-60 rounded-3xl overflow-hidden shadow-2xl shadow-black/20 mb-10">
+                {/* Book Cover (Small & Darkened) */}
+                <View className="w-32 h-48 rounded-2xl overflow-hidden bg-neutral-900 mb-12 opacity-80">
                     {book.coverUrl ? (
                         <Image
                             source={{ uri: book.coverUrl }}
@@ -214,52 +208,59 @@ export default function SessionScreen() {
                             contentFit="cover"
                         />
                     ) : (
-                        <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                            <BookOpen size={40} color="#a3a3a3" />
+                        <View className="w-full h-full bg-neutral-800 items-center justify-center">
+                            <BookOpen size={32} color="#525252" />
                         </View>
                     )}
                 </View>
 
                 {/* Timer */}
-                <Text className="text-6xl font-light text-neutral-900 tracking-tight mb-8 font-mono">
-                    {formatTime(timerSeconds)}
-                </Text>
+                <View className="mb-16 items-center">
+                    <Text
+                        className="text-8xl font-black text-white tracking-tighter leading-none font-variant-numeric-tabular-nums"
+                        style={{ fontFamily: 'Inter_900Black' }}
+                    >
+                        {formatTime(timerSeconds)}
+                    </Text>
+                    {elapsedSeconds > 0 && (
+                        <Text className="text-neutral-500 font-medium mt-2 tracking-wide">
+                            {formatTime(elapsedSeconds)} ELAPSED
+                        </Text>
+                    )}
+                </View>
 
                 {/* Controls */}
-                <View className="flex-row items-center gap-6">
+                <View className="flex-row items-center gap-8">
                     <Pressable
                         onPress={handleSubtractMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Minus size={24} color="#171717" strokeWidth={2} />
+                        <Minus size={24} color="#ffffff" strokeWidth={2.5} />
                     </Pressable>
 
                     <Pressable
                         onPress={handlePlayPause}
-                        className="w-20 h-20 bg-neutral-900 rounded-full items-center justify-center shadow-xl shadow-black/30 active:scale-90"
+                        className="w-24 h-24 bg-white rounded-full items-center justify-center active:scale-95"
                     >
                         {isRunning ? (
-                            <Pause size={32} color="#ffffff" fill="#ffffff" />
+                            <Pause size={36} color="#000000" fill="#000000" />
                         ) : (
-                            <Play size={32} color="#ffffff" fill="#ffffff" style={{ marginLeft: 4 }} />
+                            <Play size={36} color="#000000" fill="#000000" style={{ marginLeft: 4 }} />
                         )}
                     </Pressable>
 
                     <Pressable
                         onPress={handleAddMinute}
-                        className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg shadow-black/10 active:scale-90"
+                        className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Plus size={24} color="#171717" strokeWidth={2} />
+                        <Plus size={24} color="#ffffff" strokeWidth={2.5} />
                     </Pressable>
                 </View>
             </View>
 
-            {/* Book Info */}
-            <View className="items-center pb-8">
-                <Text className="text-sm text-neutral-500" numberOfLines={1}>
-                    Reading
-                </Text>
-                <Text className="text-base font-semibold text-neutral-900" numberOfLines={1}>
+            {/* Footer Book Info */}
+            <View className="items-center pb-8 opacity-50">
+                <Text className="text-sm font-bold text-white uppercase tracking-widest" numberOfLines={1}>
                     {book.title}
                 </Text>
             </View>
@@ -275,52 +276,72 @@ export default function SessionScreen() {
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     className="flex-1"
                 >
-                    <View className="flex-1 bg-black/50 justify-center items-center px-6">
-                        <View className="bg-white w-full rounded-3xl p-6 shadow-2xl">
-                            {/* Title */}
-                            <Text className="text-2xl font-bold text-neutral-900 text-center mb-2">
-                                Session Complete
-                            </Text>
-                            <Text className="text-base text-neutral-500 text-center mb-6">
-                                You read for {Math.round(elapsedSeconds / 60)} minutes.
-                            </Text>
+                    <View className="flex-1 bg-black/90 justify-center items-center px-6">
+                        <View className="bg-neutral-900 w-full rounded-[32px] p-8 border border-neutral-800">
+                            {/* Header */}
+                            <View className="items-center mb-8">
+                                <Text className="text-3xl font-black text-white text-center tracking-tighter mb-2" style={{ fontFamily: 'Inter_900Black' }}>
+                                    Session Complete
+                                </Text>
+                                <Text className="text-neutral-400 text-center font-medium">
+                                    You read for <Text className="text-white font-bold">{Math.round(elapsedSeconds / 60)} minutes</Text>.
+                                </Text>
+                            </View>
 
                             {/* Page Input */}
-                            <View className="mb-6">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">
-                                    What page are you on now?
+                            <View className="mb-8">
+                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4 text-center">
+                                    Current Page
                                 </Text>
-                                <TextInput
-                                    className="bg-neutral-100 rounded-2xl px-6 py-4 text-center text-3xl font-bold text-neutral-900"
-                                    placeholder="0"
-                                    placeholderTextColor="#a3a3a3"
-                                    keyboardType="number-pad"
-                                    value={pageInput}
-                                    onChangeText={(text) => {
-                                        setPageInput(text);
-                                        setInputError("");
-                                    }}
-                                    autoFocus
-                                />
-                                <Text className="text-sm text-neutral-400 text-center mt-2">
-                                    of {book.totalPages} pages
+                                <View className="flex-row items-center justify-center">
+                                    <TextInput
+                                        className="bg-black border border-neutral-800 rounded-2xl px-8 py-6 text-center text-4xl font-black text-white w-full"
+                                        style={{ fontFamily: 'Inter_900Black' }}
+                                        placeholder="0"
+                                        placeholderTextColor="#333"
+                                        keyboardType="number-pad"
+                                        value={pageInput}
+                                        onChangeText={(text) => {
+                                            setPageInput(text);
+                                            setInputError("");
+                                        }}
+                                        autoFocus
+                                    />
+                                </View>
+                                <Text className="text-sm text-neutral-500 text-center mt-3 font-medium">
+                                    / {book.totalPages} pages
                                 </Text>
                                 {inputError ? (
-                                    <Text className="text-sm text-red-500 text-center mt-2">
-                                        {inputError}
-                                    </Text>
+                                    <View className="bg-red-900/20 py-2 rounded-lg mt-3">
+                                        <Text className="text-sm text-red-500 text-center font-bold">
+                                            {inputError}
+                                        </Text>
+                                    </View>
                                 ) : null}
                             </View>
 
-                            {/* Update Button */}
-                            <Pressable
-                                onPress={handleUpdateProgress}
-                                className="bg-neutral-900 py-4 rounded-full items-center justify-center active:scale-[0.98] shadow-lg shadow-black/20"
-                            >
-                                <Text className="text-lg font-bold text-white">
-                                    Update Progress
-                                </Text>
-                            </Pressable>
+                            {/* Actions */}
+                            <View className="gap-3">
+                                <Pressable
+                                    onPress={handleUpdateProgress}
+                                    className="bg-white py-5 rounded-full items-center justify-center active:scale-[0.98]"
+                                >
+                                    <Text className="text-lg font-black text-black uppercase tracking-wide">
+                                        Update Progress
+                                    </Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => {
+                                        setShowCompletionModal(false);
+                                        router.back();
+                                    }}
+                                    className="py-4 items-center justify-center active:opacity-70"
+                                >
+                                    <Text className="text-base font-bold text-neutral-500">
+                                        Discard Session
+                                    </Text>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
