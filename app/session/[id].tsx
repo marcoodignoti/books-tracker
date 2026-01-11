@@ -38,10 +38,7 @@ export default function SessionScreen() {
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
-<<<<<<< HEAD
     const addSession = useBookStore((state) => state.addSession);
-=======
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
 
     const [timerSeconds, setTimerSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
     const [isRunning, setIsRunning] = useState(false);
@@ -58,7 +55,6 @@ export default function SessionScreen() {
             ? Math.round((Date.now() - sessionStartTimeRef.current) / 1000)
             : 0;
     };
-<<<<<<< HEAD
 
     // Monitor timer completion separate from the interval tick to avoid side-effects in setState
     useEffect(() => {
@@ -70,8 +66,6 @@ export default function SessionScreen() {
             setShowCompletionModal(true);
         }
     }, [timerSeconds, isRunning, book?.currentPage]);
-=======
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
 
     useEffect(() => {
         if (isRunning && timerSeconds > 0) {
@@ -112,21 +106,6 @@ export default function SessionScreen() {
         router.back();
     };
 
-<<<<<<< HEAD
-=======
-    const handleSelectAtmosphere = (atm: Atmosphere) => {
-        Haptics.selectionAsync();
-        setSelectedAtmosphere(atm);
-    };
-
-    const handleStartSession = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        setPhase("timer");
-        setIsRunning(true);
-        sessionStartTimeRef.current = Date.now();
-    };
-
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
     const handlePlayPause = () => {
         if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (!isRunning && elapsedSeconds === 0) {

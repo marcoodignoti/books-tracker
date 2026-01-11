@@ -115,7 +115,10 @@ export default function BookDetailScreen() {
     // --- Notes ---
     const handleAddNote = () => {
         if (!noteContent.trim()) return;
-        addNote(book.id, noteContent, notePage ? parseInt(notePage) : undefined);
+        addNote(book.id, {
+            content: noteContent,
+            page: notePage ? parseInt(notePage) : undefined
+        });
         setNoteContent("");
         setNotePage("");
         setNoteModalVisible(false);
@@ -364,7 +367,7 @@ export default function BookDetailScreen() {
                                 <Text className="text-white font-bold">Cancel</Text>
                             </Pressable>
                             <Pressable
-                                onPress={handleAddBook}
+                                onPress={handleAddNote}
                                 className="flex-1 py-4 bg-white rounded-xl items-center"
                             >
                                 <Text className="text-black font-bold">Save Note</Text>
@@ -374,8 +377,62 @@ export default function BookDetailScreen() {
                 </View>
             </Modal>
 
-            {/* Edit Modal (Similar structure if needed, or reused) */}
-            {/* Keeping it simple for now, but ensure Edit functionality mocks exist above */}
+            {/* Edit Modal */}
+            <Modal
+                transparent
+                visible={isEditModalVisible}
+                animationType="fade"
+                onRequestClose={() => setEditModalVisible(false)}
+            >
+                <View className="flex-1 bg-black/80 items-center justify-center px-6">
+                    <GlassCard intensity={80} className="w-full rounded-3xl border-white/10" contentClassName="p-6">
+                        <Text className="text-white font-bold text-xl mb-6 text-center">Edit Book</Text>
+
+                        <View className="w-full gap-4 mb-6">
+                            <View>
+                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Title</Text>
+                                <TextInput
+                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    value={editTitle}
+                                    onChangeText={setEditTitle}
+                                />
+                            </View>
+                            <View>
+                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Author</Text>
+                                <TextInput
+                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    value={editAuthor}
+                                    onChangeText={setEditAuthor}
+                                />
+                            </View>
+                            <View>
+                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Total Pages</Text>
+                                <TextInput
+                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    value={editTotalPages}
+                                    onChangeText={setEditTotalPages}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <Pressable
+                                onPress={() => setEditModalVisible(false)}
+                                className="flex-1 py-4 bg-neutral-800 rounded-xl items-center"
+                            >
+                                <Text className="text-white font-bold">Cancel</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={saveEdit}
+                                className="flex-1 py-4 bg-white rounded-xl items-center"
+                            >
+                                <Text className="text-black font-bold">Save Changes</Text>
+                            </Pressable>
+                        </View>
+                    </GlassCard>
+                </View>
+            </Modal>
         </View>
     );
 }

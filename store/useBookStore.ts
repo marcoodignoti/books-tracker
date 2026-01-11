@@ -1,22 +1,13 @@
-<<<<<<< HEAD
 import { Book, BookStatus, Note, ReadingSession } from '@/types/book';
-=======
-import { Book, BookStatus, ReadingSession } from '@/types/book';
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface BookStore {
     books: Book[];
-<<<<<<< HEAD
     addBook: (book: Omit<Book, 'addedAt' | 'sessions' | 'notes'>) => void;
     updateBook: (id: string, updates: Partial<Pick<Book, 'title' | 'author' | 'totalPages' | 'coverUrl'>>) => void;
     updateProgress: (id: string, currentPage: number) => void;
-=======
-    addBook: (book: Omit<Book, 'addedAt' | 'sessions'>) => void;
-    updateProgress: (id: string, currentPage: number, sessionData?: SessionData) => void;
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
     updateStatus: (id: string, status: BookStatus) => void;
     deleteBook: (id: string) => void;
     addSession: (bookId: string, session: Omit<ReadingSession, 'id'>) => void;
@@ -43,16 +34,12 @@ export const useBookStore = create<BookStore>()(
                             ...book,
                             addedAt: Date.now(),
                             sessions: [],
-<<<<<<< HEAD
                             notes: [],
-=======
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
                         },
                     ],
                 }));
             },
 
-<<<<<<< HEAD
             updateBook: (id, updates) => {
                 set((state) => ({
                     books: state.books.map((book) =>
@@ -62,9 +49,6 @@ export const useBookStore = create<BookStore>()(
             },
 
             updateProgress: (id, currentPage) => {
-=======
-            updateProgress: (id, currentPage, sessionData) => {
->>>>>>> 8bd8634b81be9b801a5c6b6165f81fd79095edac
                 set((state) => ({
                     books: state.books.map((book) => {
                         if (book.id !== id) return book;
