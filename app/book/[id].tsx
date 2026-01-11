@@ -1,11 +1,11 @@
+import { BookImmersiveLayout } from "@/components/BookImmersiveLayout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import { BookStatus } from "@/types/book";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Play, Plus, Trash2 } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import {
     ActivityIndicator,
@@ -13,10 +13,9 @@ import {
     Dimensions,
     Modal,
     Pressable,
-    ScrollView,
     Text,
     TextInput,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,6 +26,8 @@ export default function BookDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateStatus = useBookStore((state) => state.updateStatus);
@@ -47,9 +48,9 @@ export default function BookDetailScreen() {
 
     if (!book) {
         return (
-            <View className="flex-1 bg-black items-center justify-center">
-                <ActivityIndicator size="large" color="#ffffff" />
-                <Text className="text-white mt-4 font-bold">Loading Book...</Text>
+            <View className="flex-1 bg-white dark:bg-black items-center justify-center">
+                <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#000000"} />
+                <Text className="text-black dark:text-white mt-4 font-bold">Loading Book...</Text>
             </View>
         );
     }
@@ -131,205 +132,182 @@ export default function BookDetailScreen() {
     };
 
     return (
-        <View className="flex-1 bg-black relative">
+        <View className="flex-1 bg-white dark:bg-black relative">
 
-            {/* --- Background Cover --- */}
-            <View className="absolute top-0 left-0 right-0 z-0" style={{ height: COVER_HEIGHT }}>
-                {book.coverUrl ? (
-                    <Image
-                        source={{ uri: book.coverUrl }}
-                        style={{ width: SCREEN_WIDTH, height: COVER_HEIGHT }}
-                        contentFit="cover"
-                        transition={500}
-                    />
-                ) : (
-                    <LinearGradient
-                        colors={["#262626", "#171717", "#000000"]}
-                        style={{ flex: 1 }}
-                    />
-                )}
-                <LinearGradient
-                    colors={["transparent", "rgba(0,0,0,0.2)", "#000000"]}
-                    locations={[0, 0.4, 1]}
-                    style={{ position: "absolute", inset: 0 }}
-                />
-            </View>
-
-            {/* --- Navbar --- */}
+            {/* --- Navbar (Back & Edit) --- */}
             <View
                 className="absolute z-50 flex-row justify-between w-full px-4"
-                style={{ top: insets.top + 10 }}
+                style={{ top: 44 }}
             >
                 <Pressable onPress={handleBack} className="active:scale-90">
-                    <GlassCard intensity={40} className="w-12 h-12 rounded-full items-center justify-center border-white/10">
-                        <ChevronLeft size={24} color="white" />
+                    <GlassCard
+                        intensity={23}
+                        className="w-12 h-12 rounded-full border-black/10 dark:border-white/10"
+                        contentClassName="items-center justify-center"
+                    >
+                        <ChevronLeft size={24} color={isDark ? "white" : "black"} />
                     </GlassCard>
                 </Pressable>
 
                 <Pressable onPress={openEditModal} className="active:scale-90">
-                    <GlassCard intensity={40} className="px-4 h-12 rounded-full items-center justify-center border-white/10">
-                        <Text className="text-white text-xs font-bold uppercase tracking-widest">Edit</Text>
+                    <GlassCard
+                        intensity={23}
+                        className="px-5 h-12 rounded-full border-black/10 dark:border-white/10"
+                        contentClassName="items-center justify-center"
+                    >
+                        <Text className="text-black dark:text-white text-sm font-bold uppercase tracking-wide">Edit</Text>
                     </GlassCard>
                 </Pressable>
             </View>
 
-            {/* --- Content Scroll --- */}
-            <ScrollView
-                className="flex-1 z-10"
-                contentContainerStyle={{ paddingTop: COVER_HEIGHT - 100, paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-            >
-                <View className="px-6">
-                    {/* Floating Title Card */}
-                    <GlassCard
-                        intensity={60}
-                        className="rounded-[32px] border-white/10 mb-6 overflow-hidden"
-                        contentClassName="p-6"
-                    >
-                        {/* Status Badge */}
-                        <Pressable
-                            onPress={() => setShowStatusOptions(!showStatusOptions)}
-                            className="self-start mb-4"
-                        >
-                            <GlassCard intensity={40} className="rounded-full border-white/10" contentClassName="px-3 py-1 bg-white/10">
-                                <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
+            <BookImmersiveLayout
+                coverUrl={book.coverUrl}
+                title={book.title}
+                author={book.author}
+                statsContent={
+                    <>
+                        {/* Status Pill (Interactive) */}
+                        <Pressable onPress={() => setShowStatusOptions(!showStatusOptions)}>
+                            <View className="bg-black/40 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+                                <Text className="text-xs font-bold text-white uppercase tracking-wider">
                                     {book.status.replace(/-/g, " ")}
                                 </Text>
-                            </GlassCard>
-                        </Pressable>
-
-                        {/* Status Selector */}
-                        {showStatusOptions && (
-                            <View className="flex-row gap-2 mb-4">
-                                {(["want-to-read", "reading", "finished"] as BookStatus[]).map((s) => (
-                                    <Pressable
-                                        key={s}
-                                        onPress={() => handleSetStatus(s)}
-                                        className={`px-3 py-2 rounded-lg border ${book.status === s ? "bg-white border-white" : "bg-transparent border-white/20"}`}
-                                    >
-                                        <Text className={`text-[10px] font-bold uppercase ${book.status === s ? "text-black" : "text-white"}`}>
-                                            {s.replace(/-/g, " ")}
-                                        </Text>
-                                    </Pressable>
-                                ))}
-                            </View>
-                        )}
-
-                        <Text
-                            className="text-4xl font-black text-white leading-tight mb-2 tracking-tighter"
-                            style={{ fontFamily: 'Inter_900Black' }}
-                        >
-                            {book.title}
-                        </Text>
-                        <Text className="text-lg text-neutral-400 font-medium mb-6">
-                            {book.author}
-                        </Text>
-
-                        {/* Progress Bar */}
-                        <View className="mb-2">
-                            <View className="flex-row justify-between mb-2">
-                                <Text className="text-xs text-neutral-400 font-bold uppercase tracking-widest">Progress</Text>
-                                <Text className="text-xs text-white font-bold uppercase tracking-widest">{Math.round(progress)}%</Text>
-                            </View>
-                            <View className="h-2 bg-neutral-800 rounded-full overflow-hidden">
-                                <View
-                                    className="h-full bg-white rounded-full"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </View>
-                            <Text className="text-[10px] text-neutral-500 mt-2 text-right">
-                                {book.currentPage} / {book.totalPages} pages
-                            </Text>
-                        </View>
-
-                        {/* Main Action Button */}
-                        <Pressable
-                            onPress={handleStartReading}
-                            className="mt-4 active:scale-[0.98]"
-                        >
-                            <View className="bg-white rounded-2xl h-14 flex-row items-center justify-center gap-3">
-                                <Play size={20} color="black" fill="black" />
-                                <Text className="text-black text-sm font-black uppercase tracking-widest">Start Session</Text>
                             </View>
                         </Pressable>
-                    </GlassCard>
 
-                    {/* Stats Row */}
-                    <View className="flex-row gap-4 mb-6">
-                        <GlassCard intensity={20} className="flex-1 rounded-2xl p-4 border-white/5 items-center">
-                            <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mb-1">Left</Text>
-                            <Text className="text-white text-xl font-black">{pagesLeft}</Text>
-                            <Text className="text-neutral-400 text-[10px]">pages</Text>
-                        </GlassCard>
-                        <GlassCard intensity={20} className="flex-1 rounded-2xl p-4 border-white/5 items-center">
-                            <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mb-1">Sessions</Text>
-                            <Text className="text-white text-xl font-black">{book.sessions?.length || 0}</Text>
-                            <Text className="text-neutral-400 text-[10px]">total</Text>
-                        </GlassCard>
-                        <GlassCard intensity={20} className="flex-1 rounded-2xl p-4 border-white/5 items-center">
-                            <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mb-1">Time</Text>
-                            <Text className="text-white text-xl font-black">
-                                {Math.round((book.sessions?.reduce((acc, s) => acc + s.duration, 0) || 0) / 60)}
-                            </Text>
-                            <Text className="text-neutral-400 text-[10px]">mins</Text>
-                        </GlassCard>
-                    </View>
-
-                    {/* Notes Section */}
-                    <View className="mb-8">
-                        <View className="flex-row justify-between items-center mb-4 px-2">
-                            <Text className="text-white text-lg font-bold tracking-tight">Notes & Quotes</Text>
-                            <Pressable
-                                onPress={() => {
-                                    if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
-                                    setNoteModalVisible(true)
-                                }}
-                                className="bg-neutral-800 w-8 h-8 rounded-full items-center justify-center"
-                            >
-                                <Plus size={16} color="white" />
-                            </Pressable>
-                        </View>
-
-                        {(!book.notes || book.notes.length === 0) ? (
-                            <View className="items-center py-8 opacity-40">
-                                <Text className="text-neutral-500">No notes yet.</Text>
+                        {/* Page Count */}
+                        {book.totalPages > 0 && (
+                            <View className="bg-black/40 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+                                <Text className="text-xs font-bold text-white uppercase tracking-wider">
+                                    {book.totalPages} Pages
+                                </Text>
                             </View>
-                        ) : (
-                            book.notes.slice().reverse().map((note) => (
-                                <GlassCard
-                                    key={note.id}
-                                    intensity={15}
-                                    className="mb-3 rounded-xl border-white/5"
-                                    contentClassName="p-4"
-                                >
-                                    <View className="flex-row justify-between mb-2">
-                                        {note.page && (
-                                            <View className="bg-white/10 px-2 py-1 rounded">
-                                                <Text className="text-[10px] text-white font-bold uppercase">Page {note.page}</Text>
-                                            </View>
-                                        )}
-                                        <Pressable onPress={() => handleDeleteNote(note.id)} hitSlop={10}>
-                                            <Trash2 size={14} color="#525252" />
-                                        </Pressable>
-                                    </View>
-                                    <Text className="text-neutral-300 font-medium leading-relaxed">{note.content}</Text>
-                                    <Text className="text-neutral-600 text-[10px] mt-2 text-right">
-                                        {new Date(note.createdAt).toLocaleDateString()}
-                                    </Text>
-                                </GlassCard>
-                            ))
                         )}
-                    </View>
-
-                    {/* Delete Button */}
+                    </>
+                }
+                footer={
                     <Pressable
-                        onPress={handleDelete}
-                        className="self-center mb-20 px-6 py-3 rounded-full bg-red-500/10 border border-red-500/20 active:bg-red-500/20"
+                        onPress={handleStartReading}
+                        className="active:scale-[0.98]"
                     >
-                        <Text className="text-red-500 font-bold text-xs uppercase tracking-widest">Delete Book</Text>
+                        <View className="bg-black dark:bg-white rounded-2xl h-14 flex-row items-center justify-center gap-3 shadow-md shadow-black/20">
+                            <Play size={20} color={isDark ? "black" : "white"} fill={isDark ? "black" : "white"} />
+                            <Text className="text-white dark:text-black text-sm font-bold uppercase tracking-wide">Start Session</Text>
+                        </View>
                     </Pressable>
+                }
+            >
+                {/* Status Options Dropdown (if visible, show here or in modal? visual hierarchy...) 
+                    In correct flow, status options might be better as a modal or a section here.
+                    Let's render them here if toggled.
+                */}
+                {showStatusOptions && (
+                    <View className="flex-row gap-2 mb-6 flex-wrap justify-center">
+                        {(["want-to-read", "reading", "finished"] as BookStatus[]).map((s) => (
+                            <Pressable
+                                key={s}
+                                onPress={() => handleSetStatus(s)}
+                                className={`px-4 py-2 rounded-lg border ${book.status === s ? (isDark ? "bg-white border-white" : "bg-black border-black") : "bg-transparent border-black/10 dark:border-white/10"}`}
+                            >
+                                <Text className={`text-[10px] font-bold uppercase ${book.status === s ? (isDark ? "text-black" : "text-white") : "text-black dark:text-white"}`}>
+                                    {s.replace(/-/g, " ")}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                )}
+
+                {/* Progress Section */}
+                <View className="mb-8 mt-2">
+                    <View className="flex-row justify-between mb-2 px-1">
+                        <Text className="text-xs text-neutral-500 dark:text-neutral-400 font-bold uppercase tracking-wide">Progress</Text>
+                        <Text className="text-xs text-black dark:text-white font-bold uppercase tracking-wide">{Math.round(progress)}%</Text>
+                    </View>
+                    <View className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden border border-black/5 dark:border-white/5">
+                        <View
+                            className="h-full bg-black dark:bg-white rounded-full"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </View>
+                    <Text className="text-[10px] text-neutral-500 mt-2 text-right font-medium">
+                        {book.currentPage} / {book.totalPages} pages
+                    </Text>
                 </View>
-            </ScrollView>
+
+                {/* Stats Grid */}
+                <View className="flex-row gap-4 mb-8">
+                    <GlassCard intensity={10} className="flex-1 rounded-2xl p-4 items-center border-black/5 dark:border-white/5 bg-neutral-50/50 dark:bg-white/5">
+                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-wide mb-1">Left</Text>
+                        <Text className="text-black dark:text-white text-xl font-bold">{pagesLeft}</Text>
+                        <Text className="text-neutral-400 text-[10px]">pages</Text>
+                    </GlassCard>
+                    <GlassCard intensity={10} className="flex-1 rounded-2xl p-4 items-center border-black/5 dark:border-white/5 bg-neutral-50/50 dark:bg-white/5">
+                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-wide mb-1">Sessions</Text>
+                        <Text className="text-black dark:text-white text-xl font-bold">{book.sessions?.length || 0}</Text>
+                        <Text className="text-neutral-400 text-[10px]">total</Text>
+                    </GlassCard>
+                    <GlassCard intensity={10} className="flex-1 rounded-2xl p-4 items-center border-black/5 dark:border-white/5 bg-neutral-50/50 dark:bg-white/5">
+                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-wide mb-1">Time</Text>
+                        <Text className="text-black dark:text-white text-xl font-bold">
+                            {Math.round((book.sessions?.reduce((acc, s) => acc + s.duration, 0) || 0) / 60)}
+                        </Text>
+                        <Text className="text-neutral-400 text-[10px]">mins</Text>
+                    </GlassCard>
+                </View>
+
+                {/* Notes Section */}
+                <View className="mb-8">
+                    <View className="flex-row justify-between items-center mb-4 px-1">
+                        <Text className="text-black dark:text-white text-base font-bold">Notes & Quotes</Text>
+                        <Pressable
+                            onPress={() => {
+                                if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
+                                setNoteModalVisible(true)
+                            }}
+                            className="bg-neutral-100 dark:bg-neutral-800 w-8 h-8 rounded-full items-center justify-center border border-black/5 dark:border-white/5 active:bg-neutral-200"
+                        >
+                            <Plus size={16} color={isDark ? "white" : "black"} />
+                        </Pressable>
+                    </View>
+
+                    {(!book.notes || book.notes.length === 0) ? (
+                        <View className="items-center py-6 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
+                            <Text className="text-neutral-400 font-medium text-xs">No notes yet</Text>
+                        </View>
+                    ) : (
+                        book.notes.slice().reverse().map((note) => (
+                            <View
+                                key={note.id}
+                                className="mb-3 rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-5 border border-black/5 dark:border-white/5"
+                            >
+                                <View className="flex-row justify-between mb-2">
+                                    {note.page && (
+                                        <View className="bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                                            <Text className="text-[10px] text-black dark:text-white font-bold uppercase">Page {note.page}</Text>
+                                        </View>
+                                    )}
+                                    <Pressable onPress={() => handleDeleteNote(note.id)} hitSlop={10}>
+                                        <Trash2 size={14} color="#a3a3a3" />
+                                    </Pressable>
+                                </View>
+                                <Text className="text-black dark:text-neutral-300 font-medium leading-relaxed my-1">{note.content}</Text>
+                                <Text className="text-neutral-400 text-[10px] mt-2 text-right">
+                                    {new Date(note.createdAt).toLocaleDateString()}
+                                </Text>
+                            </View>
+                        ))
+                    )}
+                </View>
+
+                {/* Delete Button */}
+                <Pressable
+                    onPress={handleDelete}
+                    className="self-center mb-8 px-6 py-3 rounded-full bg-red-500/5 border border-red-500/10 active:bg-red-500/10"
+                >
+                    <Text className="text-red-500 font-bold text-xs uppercase tracking-widest">Delete Book</Text>
+                </Pressable>
+
+            </BookImmersiveLayout>
 
             {/* Note Modal */}
             <Modal
@@ -338,13 +316,13 @@ export default function BookDetailScreen() {
                 animationType="fade"
                 onRequestClose={() => setNoteModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 items-center justify-center px-6">
-                    <GlassCard intensity={80} className="w-full rounded-3xl border-white/10" contentClassName="p-6">
-                        <Text className="text-white font-bold text-xl mb-6 text-center">Add Note</Text>
+                <View className="flex-1 bg-black/40 items-center justify-center px-6">
+                    <View className="w-full bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-xl border border-black/5 dark:border-white/10">
+                        <Text className="text-black dark:text-white font-bold text-xl mb-6 text-center">Add Note</Text>
                         <TextInput
-                            className="bg-neutral-900/50 text-white p-4 rounded-xl mb-3 h-32 text-base"
+                            className="bg-neutral-100 dark:bg-black/50 text-black dark:text-white p-4 rounded-xl mb-3 h-32 text-base"
                             placeholder="Write your thought or quote..."
-                            placeholderTextColor="#525252"
+                            placeholderTextColor="#a3a3a3"
                             multiline
                             textAlignVertical="top"
                             value={noteContent}
@@ -352,9 +330,9 @@ export default function BookDetailScreen() {
                             autoFocus
                         />
                         <TextInput
-                            className="bg-neutral-900/50 text-white p-4 rounded-xl mb-6"
+                            className="bg-neutral-100 dark:bg-black/50 text-black dark:text-white p-4 rounded-xl mb-6"
                             placeholder="Page number (optional)"
-                            placeholderTextColor="#525252"
+                            placeholderTextColor="#a3a3a3"
                             keyboardType="numeric"
                             value={notePage}
                             onChangeText={setNotePage}
@@ -362,18 +340,18 @@ export default function BookDetailScreen() {
                         <View className="flex-row gap-4">
                             <Pressable
                                 onPress={() => setNoteModalVisible(false)}
-                                className="flex-1 py-4 bg-neutral-800 rounded-xl items-center"
+                                className="flex-1 py-4 bg-neutral-200 dark:bg-neutral-800 rounded-xl items-center"
                             >
-                                <Text className="text-white font-bold">Cancel</Text>
+                                <Text className="text-black dark:text-white font-bold">Cancel</Text>
                             </Pressable>
                             <Pressable
                                 onPress={handleAddNote}
-                                className="flex-1 py-4 bg-white rounded-xl items-center"
+                                className="flex-1 py-4 bg-black dark:bg-white rounded-xl items-center"
                             >
-                                <Text className="text-black font-bold">Save Note</Text>
+                                <Text className="text-white dark:text-black font-bold">Save Note</Text>
                             </Pressable>
                         </View>
-                    </GlassCard>
+                    </View>
                 </View>
             </Modal>
 
@@ -384,31 +362,31 @@ export default function BookDetailScreen() {
                 animationType="fade"
                 onRequestClose={() => setEditModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 items-center justify-center px-6">
-                    <GlassCard intensity={80} className="w-full rounded-3xl border-white/10" contentClassName="p-6">
-                        <Text className="text-white font-bold text-xl mb-6 text-center">Edit Book</Text>
+                <View className="flex-1 bg-black/40 items-center justify-center px-6">
+                    <View className="w-full bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-xl border border-black/5 dark:border-white/10">
+                        <Text className="text-black dark:text-white font-bold text-xl mb-6 text-center">Edit Book</Text>
 
                         <View className="w-full gap-4 mb-6">
                             <View>
-                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Title</Text>
+                                <Text className="text-neutral-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Title</Text>
                                 <TextInput
-                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    className="bg-neutral-100 dark:bg-black/50 text-black dark:text-white p-4 rounded-xl text-base"
                                     value={editTitle}
                                     onChangeText={setEditTitle}
                                 />
                             </View>
                             <View>
-                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Author</Text>
+                                <Text className="text-neutral-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Author</Text>
                                 <TextInput
-                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    className="bg-neutral-100 dark:bg-black/50 text-black dark:text-white p-4 rounded-xl text-base"
                                     value={editAuthor}
                                     onChangeText={setEditAuthor}
                                 />
                             </View>
                             <View>
-                                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2">Total Pages</Text>
+                                <Text className="text-neutral-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Total Pages</Text>
                                 <TextInput
-                                    className="bg-neutral-900/50 text-white p-4 rounded-xl text-base"
+                                    className="bg-neutral-100 dark:bg-black/50 text-black dark:text-white p-4 rounded-xl text-base"
                                     value={editTotalPages}
                                     onChangeText={setEditTotalPages}
                                     keyboardType="numeric"
@@ -419,20 +397,21 @@ export default function BookDetailScreen() {
                         <View className="flex-row gap-4">
                             <Pressable
                                 onPress={() => setEditModalVisible(false)}
-                                className="flex-1 py-4 bg-neutral-800 rounded-xl items-center"
+                                className="flex-1 py-4 bg-neutral-200 dark:bg-neutral-800 rounded-xl items-center"
                             >
-                                <Text className="text-white font-bold">Cancel</Text>
+                                <Text className="text-black dark:text-white font-bold">Cancel</Text>
                             </Pressable>
                             <Pressable
                                 onPress={saveEdit}
-                                className="flex-1 py-4 bg-white rounded-xl items-center"
+                                className="flex-1 py-4 bg-black dark:bg-white rounded-xl items-center"
                             >
-                                <Text className="text-black font-bold">Save Changes</Text>
+                                <Text className="text-white dark:text-black font-bold">Save Changes</Text>
                             </Pressable>
                         </View>
-                    </GlassCard>
+                    </View>
                 </View>
             </Modal>
         </View>
     );
+
 }

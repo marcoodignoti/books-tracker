@@ -1,13 +1,11 @@
 import { GlassCard } from "@/components/ui/GlassCard";
-import { mapGoogleBookToBook, searchBooks } from "@/services/googleBooks";
-import { useBookStore } from "@/store/useBookStore";
-import { GoogleBookVolume } from "@/types/book";
+import { searchBooks, searchOpenLibrary } from "@/services/googleBooks";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { BookOpen, Check, ChevronLeft, Plus, X, Zap, ZapOff } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { ChevronLeft, X, Zap, ZapOff } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Pressable,
@@ -22,51 +20,78 @@ export default function ScanScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<GoogleBookVolume | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [torchEnabled, setTorchEnabled] = useState(false);
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
-    const { books, addBook } = useBookStore();
+    // Lock to prevent multiple rapid scans before state updates
+    const isScanningLock = useRef(false);
 
     const handleBack = () => {
         if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.back();
     };
 
-    const handleBarCodeScanned = useCallback(async ({ data }: { data: string }) => {
-        if (scanned || isLoading) return;
+    const handleBarCodeScanned = useCallback(async ({ data, type }: { data: string; type?: string }) => {
+        if (isScanningLock.current || scanned || isLoading) return;
 
+        // Immediately lock
+        isScanningLock.current = true;
+
+        console.log(`[Scanner] Scanned code: ${data} (Type: ${type})`);
         setScanned(true);
         setIsLoading(true);
         setError(null);
         if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         try {
-            const results = await searchBooks(`isbn:${data}`);
-            if (results.length > 0) {
-                setResult(results[0]);
-            } else {
-                setError(`No book found for ISBN: ${data}`);
+            // First try strict ISBN search
+            console.log(`[Scanner] Attempting strict ISBN search for: isbn:${data}`);
+            let results = await searchBooks(`isbn:${data}`);
+
+            // Fallback 1: Google Books generic search
+            if (results.length === 0) {
+                console.log("[Scanner] ISBN search failed, retrying with raw data...");
+                results = await searchBooks(data);
             }
-        } catch {
+
+            // Fallback 2: OpenLibrary
+            if (results.length === 0) {
+                console.log("[Scanner] Google Books failed, attempting OpenLibrary fallback...");
+                results = await searchOpenLibrary(data);
+            }
+
+            console.log(`[Scanner] Search completed. Found ${results.length} results.`);
+
+            if (results.length > 0) {
+                if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                // Direct navigation to details
+                router.push(`/search-book/${results[0].id}`);
+            } else {
+                if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                setError(`No book found for code: ${data}`);
+            }
+        } catch (err) {
+            console.error("[Scanner] Error during search:", err instanceof Error ? err.message : "Unknown error");
             setError("Failed to search for book");
         } finally {
             setIsLoading(false);
+            // NOTE: We do NOT unlock here if successful, because we want to stay "scanned" 
+            // until the user presses "Scan Again" or leaves.
+            // However, if there was an error, we stay locked until "Scan Again" (Retry) is pressed.
+            // If we navigated away, the component might unmount.
         }
-    }, [scanned, isLoading]);
-
-    const handleAddBook = useCallback(() => {
-        if (!result) return;
-        if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        const book = mapGoogleBookToBook(result);
-        addBook(book);
-        router.back();
-    }, [result, addBook, router]);
+    }, [scanned, isLoading, router]);
 
     const handleScanAgain = () => {
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setScanned(false);
-        setResult(null);
         setError(null);
+        // Release the lock
+        setTimeout(() => {
+            isScanningLock.current = false;
+        }, 100); // Small delay to prevent double firing on press release
     };
 
     const toggleTorch = () => {
@@ -74,39 +99,37 @@ export default function ScanScreen() {
         setTorchEnabled((prev) => !prev);
     };
 
-    const isBookInLibrary = result ? books.some((book) => book.id === result.id) : false;
-
     if (!permission) {
         return (
-            <View className="flex-1 bg-black items-center justify-center">
-                <ActivityIndicator size="large" color="#ffffff" />
+            <View className="flex-1 bg-white dark:bg-black items-center justify-center">
+                <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#000000"} />
             </View>
         );
     }
 
     if (!permission.granted) {
         return (
-            <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
+            <View className="flex-1 bg-white dark:bg-black" style={{ paddingTop: insets.top }}>
                 <View className="flex-row items-center px-4 py-4">
                     <Pressable
                         onPress={handleBack}
-                        className="w-12 h-12 bg-neutral-900 rounded-full items-center justify-center active:scale-90"
+                        className="w-12 h-12 bg-neutral-100 dark:bg-neutral-900 rounded-full items-center justify-center active:scale-90"
                     >
-                        <ChevronLeft size={24} color="#ffffff" />
+                        <ChevronLeft size={24} color={isDark ? "#ffffff" : "#000000"} />
                     </Pressable>
                 </View>
                 <View className="flex-1 items-center justify-center px-8">
-                    <Text className="text-white text-3xl font-black text-center mb-4 tracking-tighter" style={{ fontFamily: 'Inter_900Black' }}>
+                    <Text className="text-black dark:text-white text-3xl font-bold text-center mb-4" style={{ fontFamily: 'Inter_700Bold' }}>
                         Camera Access
                     </Text>
-                    <Text className="text-neutral-400 text-center mb-10 font-medium">
+                    <Text className="text-neutral-500 dark:text-neutral-400 text-center mb-10 font-medium">
                         To scan barcodes, we need permission to use your camera.
                     </Text>
                     <Pressable
                         onPress={requestPermission}
-                        className="bg-white px-8 py-5 rounded-full active:scale-95"
+                        className="bg-black dark:bg-white px-8 py-5 rounded-full active:scale-95"
                     >
-                        <Text className="text-black font-bold text-lg uppercase tracking-wide">Grant Permission</Text>
+                        <Text className="text-white dark:text-black font-bold text-lg uppercase tracking-wide">Grant Permission</Text>
                     </Pressable>
                 </View>
             </View>
@@ -115,12 +138,10 @@ export default function ScanScreen() {
 
     return (
         <View className="flex-1 bg-black">
+            {/* Camera View - Always render but control scanning via prop */}
             <CameraView
                 style={{ flex: 1 }}
                 facing="back"
-                barcodeScannerSettings={{
-                    barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
-                }}
                 enableTorch={torchEnabled}
                 onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
             />
@@ -159,7 +180,7 @@ export default function ScanScreen() {
                 </GlassCard>
             </View>
 
-            {/* Scan Guide */}
+            {/* Scan Guide (Only when active and not loading) */}
             {!scanned && !isLoading && (
                 <View className="absolute inset-0 items-center justify-center pointer-events-none mb-20">
                     <View className="w-72 h-44 border border-white/30 rounded-3xl bg-white/5" />
@@ -171,110 +192,44 @@ export default function ScanScreen() {
                 </View>
             )}
 
-            {/* Loading State */}
+            {/* Loading Overlay */}
             {isLoading && (
-                <View className="absolute inset-0 bg-black/80 items-center justify-center">
+                <View className="absolute inset-0 bg-black/80 items-center justify-center z-30">
                     <ActivityIndicator size="large" color="#ffffff" />
-                    <Text className="text-white mt-4 font-bold uppercase tracking-widest text-xs">Accessing Database...</Text>
+                    <Text className="text-white mt-4 font-bold uppercase tracking-widest text-xs">Searching Database...</Text>
                 </View>
             )}
 
-            {/* Result Panel - Glass Sheet sliding from bottom */}
-            {(result || error) && !isLoading && (
-                <View className="absolute inset-0 z-30 justify-end bg-black/60">
-                    <GlassCard
-                        intensity={90}
-                        tint="dark"
-                        className="rounded-t-[32px] border-t border-white/20 overflow-hidden"
-                        contentClassName="p-8 pb-12"
-                        borderRadius={0}
+            {/* Scan Again Overlay (When returning from details) */}
+            {scanned && !isLoading && !error && (
+                <View className="absolute inset-0 bg-black/60 items-center justify-center z-40">
+                    <Pressable
+                        onPress={handleScanAgain}
+                        className="bg-white/20 backdrop-blur-md px-8 py-6 rounded-full border border-white/30 active:scale-95"
                     >
-                        {error ? (
-                            <>
-                                <View className="items-center mb-8">
-                                    <View className="w-16 h-16 bg-red-500/10 rounded-full items-center justify-center mb-6 border border-red-500/20">
-                                        <X size={32} color="#ef4444" />
-                                    </View>
-                                    <Text className="text-white text-lg font-bold text-center mb-2">
-                                        Not Found
-                                    </Text>
-                                    <Text className="text-neutral-400 text-center text-sm px-4">
-                                        {error}
-                                    </Text>
-                                </View>
-                                <Pressable
-                                    onPress={handleScanAgain}
-                                    className="bg-white rounded-full py-5 items-center active:scale-[0.98]"
-                                >
-                                    <Text className="text-sm font-black text-black uppercase tracking-widest">Scan Again</Text>
-                                </Pressable>
-                            </>
-                        ) : result && (
-                            <>
-                                <View className="flex-row mb-8">
-                                    <View className="w-28 h-40 rounded-sm overflow-hidden bg-neutral-800 shadow-2xl shadow-black border border-white/10">
-                                        {result.volumeInfo.imageLinks?.thumbnail ? (
-                                            <Image
-                                                source={{ uri: result.volumeInfo.imageLinks.thumbnail.replace("http://", "https://") }}
-                                                style={{ width: "100%", height: "100%" }}
-                                                contentFit="cover"
-                                            />
-                                        ) : (
-                                            <View className="w-full h-full bg-neutral-800 items-center justify-center">
-                                                <BookOpen size={24} color="#525252" />
-                                            </View>
-                                        )}
-                                    </View>
-                                    <View className="flex-1 ml-6 justify-center">
-                                        <View className="bg-white/10 self-start px-3 py-1 rounded-full mb-3 border border-white/10">
-                                            <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
-                                                Found Book
-                                            </Text>
-                                        </View>
-                                        <Text
-                                            className="text-2xl font-black text-white leading-tight mb-2 tracking-tighter"
-                                            numberOfLines={2}
-                                            style={{ fontFamily: 'Inter_900Black' }}
-                                        >
-                                            {result.volumeInfo.title}
-                                        </Text>
-                                        <Text className="text-neutral-400 font-medium text-sm" numberOfLines={1}>
-                                            {result.volumeInfo.authors?.join(", ") || "Unknown Author"}
-                                        </Text>
-                                        {result.volumeInfo.pageCount && (
-                                            <Text className="text-neutral-500 text-xs mt-2 font-bold uppercase tracking-widest">
-                                                {result.volumeInfo.pageCount} pages
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
+                        <Text className="text-white font-black uppercase tracking-widest text-sm">Tap to Scan Again</Text>
+                    </Pressable>
+                </View>
+            )}
 
-                                <View className="flex-row gap-4">
-                                    <Pressable
-                                        onPress={handleScanAgain}
-                                        className="flex-1 bg-white/10 rounded-full py-4 items-center active:scale-[0.98] border border-white/10"
-                                    >
-                                        <Text className="text-xs font-bold text-white uppercase tracking-widest">Retry</Text>
-                                    </Pressable>
-
-                                    {isBookInLibrary ? (
-                                        <View className="flex-[2] bg-green-500/20 rounded-full py-4 flex-row items-center justify-center gap-2 border border-green-500/30">
-                                            <Check size={16} color="#4ade80" strokeWidth={3} />
-                                            <Text className="text-xs font-bold text-green-400 uppercase tracking-widest">In Library</Text>
-                                        </View>
-                                    ) : (
-                                        <Pressable
-                                            onPress={handleAddBook}
-                                            className="flex-[2] bg-white rounded-full py-4 flex-row items-center justify-center gap-2 active:scale-[0.98]"
-                                        >
-                                            <Plus size={18} color="#000000" strokeWidth={3} />
-                                            <Text className="text-xs font-black text-black uppercase tracking-widest">Add to Library</Text>
-                                        </Pressable>
-                                    )}
-                                </View>
-                            </>
-                        )}
-                    </GlassCard>
+            {/* Error Overlay */}
+            {error && !isLoading && (
+                <View className="absolute inset-0 bg-black/80 items-center justify-center z-50 px-8">
+                    <View className="w-20 h-20 bg-red-500/20 rounded-full items-center justify-center mb-6 border border-red-500/30">
+                        <X size={40} color="#ef4444" />
+                    </View>
+                    <Text className="text-white text-xl font-bold text-center mb-2">
+                        Not Found
+                    </Text>
+                    <Text className="text-neutral-400 text-center text-sm mb-8">
+                        {error}
+                    </Text>
+                    <Pressable
+                        onPress={handleScanAgain}
+                        className="bg-white px-10 py-4 rounded-full active:scale-95"
+                    >
+                        <Text className="text-black font-black uppercase tracking-widest text-sm">Try Again</Text>
+                    </Pressable>
                 </View>
             )}
         </View>

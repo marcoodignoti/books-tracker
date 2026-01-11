@@ -1,5 +1,7 @@
+import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "nativewind";
 import { ScrollView, Text, View } from "react-native";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,6 +9,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function DashboardScreen() {
     const insets = useSafeAreaInsets();
     const books = useBookStore((state) => state.books);
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     // --- Statistics Calculations ---
     const totalBooksRead = books.filter((b) => b.status === "finished").length;
@@ -36,8 +40,9 @@ export default function DashboardScreen() {
             data.push({
                 value: pagesThisDay,
                 label: days[d.getDay()],
-                labelTextStyle: { color: '#525252', fontSize: 10, fontFamily: 'Inter_700Bold' },
-                frontColor: pagesThisDay > 0 ? '#ef4444' : '#262626', // Red for activity, dark grey for none
+                // Revert to softer font weight
+                labelTextStyle: { color: isDark ? '#a3a3a3' : '#737373', fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+                frontColor: pagesThisDay > 0 ? '#ef4444' : (isDark ? '#262626' : '#e5e5e5'),
             });
         }
         return data;
@@ -46,166 +51,161 @@ export default function DashboardScreen() {
     const weeklyData = getLast7DaysData();
     const hasActivity = weeklyData.some(d => d.value > 0);
 
-    // Pie Chart Data (Mocked/Calculated relative distribution)
+    // Pie Chart Data
     const pieData = [
         { value: 60, color: '#ef4444', text: '54%' },
-        { value: 30, color: '#262626', text: '30%' },
-        { value: 10, color: '#171717', text: '16%' },
+        { value: 30, color: isDark ? '#262626' : '#d4d4d4', text: '30%' },
+        { value: 10, color: isDark ? '#171717' : '#a3a3a3', text: '16%' },
     ];
 
     return (
-        <View className="flex-1 bg-black">
-            <StatusBar style="light" />
+        <View className="flex-1 bg-white dark:bg-black" style={{ paddingTop: insets.top }}>
+            <StatusBar style={isDark ? "light" : "dark"} />
 
             <ScrollView
                 className="flex-1"
                 contentContainerStyle={{
-                    paddingTop: insets.top + 20,
                     paddingBottom: insets.bottom + 100,
-                    paddingHorizontal: 24
+                    paddingHorizontal: 0, // Reset horizontal padding to allow full-width cards with margins
                 }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header Badge */}
-                <View className="items-center mb-10">
-                    <View className="border border-neutral-800 px-4 py-2 rounded-full">
-                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
-                            State of Your Reading
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Hero Statement */}
-                <View className="mb-12">
+                {/* Standard Header (Matches Library) */}
+                <View className="flex-row items-end justify-between px-6 pb-8 pt-4">
                     <Text
-                        className="text-white text-5xl font-black leading-tight tracking-tighter"
-                        style={{ fontFamily: 'Inter_900Black' }}
+                        className="text-4xl font-bold text-black dark:text-white"
+                        style={{ fontFamily: 'Inter_700Bold' }}
                     >
-                        Reading {"\n"}
-                        is knowledge.{"\n"}
-                        <Text className="text-neutral-600">The data {"\n"}is clear.</Text>
+                        Dashboard
                     </Text>
                 </View>
 
-                {/* Primary Stats - FLAT Typography */}
-                <View className="mb-16">
-                    <Text className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-2">
-                        Lifetime Total
-                    </Text>
-                    <Text
-                        className="text-white text-9xl font-black leading-none tracking-tighter -ml-1 text-shadow-sm"
-                        style={{ fontFamily: 'Inter_900Black', fontSize: 96 }}
+                {/* Hero Stats Card */}
+                <View className="px-6 mb-8">
+                    <GlassCard
+                        intensity={30}
+                        className="rounded-[32px] overflow-hidden border-black/5 dark:border-white/10"
+                        contentClassName="p-8 items-center"
                     >
-                        {totalPagesRead}
-                    </Text>
-                    <Text className="text-neutral-600 text-sm font-bold uppercase tracking-wide mt-2 ml-1">
-                        Pages Read
-                    </Text>
-                </View>
-
-                {/* Secondary Stats Grid - FLAT */}
-                <View className="flex-row gap-8 mb-16 px-2">
-                    <View className="flex-1">
-                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mb-1">
-                            Books Finished
+                        <Text className="text-neutral-500 dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                            Lifetime Pages
                         </Text>
                         <Text
-                            className="text-white text-6xl font-black leading-none tracking-tighter"
-                            style={{ fontFamily: 'Inter_900Black' }}
+                            className="text-black dark:text-white text-7xl font-black leading-none mb-1"
+                            style={{ fontFamily: 'Inter_700Bold' }}
                         >
-                            {totalBooksRead}
+                            {totalPagesRead.toLocaleString()}
                         </Text>
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mb-1">
-                            Hours Read
-                        </Text>
-                        <Text
-                            className="text-white text-6xl font-black leading-none tracking-tighter"
-                            style={{ fontFamily: 'Inter_900Black' }}
-                        >
-                            {totalHours}
-                        </Text>
-                    </View>
+
+                        <View className="flex-row gap-12 mt-8 w-full justify-center">
+                            <View className="items-center">
+                                <Text
+                                    className="text-black dark:text-white text-3xl font-bold leading-none"
+                                    style={{ fontFamily: 'Inter_700Bold' }}
+                                >
+                                    {totalBooksRead}
+                                </Text>
+                                <Text className="text-neutral-400 text-[10px] font-bold uppercase tracking-wide mt-2">
+                                    Books
+                                </Text>
+                            </View>
+                            <View className="w-[1px] h-12 bg-black/5 dark:bg-white/10" />
+                            <View className="items-center">
+                                <Text
+                                    className="text-black dark:text-white text-3xl font-bold leading-none"
+                                    style={{ fontFamily: 'Inter_700Bold' }}
+                                >
+                                    {totalHours}
+                                </Text>
+                                <Text className="text-neutral-400 text-[10px] font-bold uppercase tracking-wide mt-2">
+                                    Hours
+                                </Text>
+                            </View>
+                        </View>
+                    </GlassCard>
                 </View>
 
-                {/* Charts Section - Clean & Minimal */}
-                <View className="gap-16">
+                {/* Charts Grid */}
+                <View className="px-6 gap-6">
                     {/* Weekly Activity */}
-                    <View>
+                    <GlassCard
+                        intensity={20}
+                        className="rounded-[32px] overflow-hidden border-black/5 dark:border-white/5"
+                        contentClassName="p-6"
+                    >
                         <View className="flex-row justify-between items-center mb-6 px-1">
-                            <Text className="text-white text-xl font-bold tracking-tight">
+                            <Text className="text-black dark:text-white text-lg font-bold">
                                 Weekly Activity
                             </Text>
-                            {hasActivity && (
-                                <View className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                            )}
                         </View>
                         <BarChart
                             data={weeklyData}
-                            barWidth={32}
-                            spacing={16}
+                            barWidth={28}
+                            spacing={20}
                             roundedTop
                             roundedBottom
                             hideRules
                             xAxisThickness={0}
                             yAxisThickness={0}
-                            yAxisTextStyle={{ color: '#525252' }}
+                            yAxisTextStyle={{ color: isDark ? '#525252' : '#a3a3a3', fontSize: 10, fontWeight: '600' }}
                             noOfSections={3}
                             maxValue={Math.max(...weeklyData.map(d => d.value), 10)}
                             isAnimated
-                            height={200}
-                            width={300}
+                            height={180}
+                            width={280} // Explicit width to fit in card
+                        // Use explicit props for bar styling if necessary, but data handles frontColor
                         />
-                    </View>
+                    </GlassCard>
 
-                    {/* Sessions Distribution (Pie Chart) */}
-                    <View>
-                        <Text className="text-white text-xl font-bold tracking-tight mb-8 px-1">
+                    {/* Sessions Distribution */}
+                    <GlassCard
+                        intensity={20}
+                        className="rounded-[32px] overflow-hidden border-black/5 dark:border-white/5"
+                        contentClassName="p-6"
+                    >
+                        <Text className="text-black dark:text-white text-lg font-bold mb-8 px-1">
                             Session Impact
                         </Text>
-                        <View className="flex-row items-center justify-between px-2">
+                        <View className="flex-row items-center justify-between">
                             <PieChart
                                 data={pieData}
                                 donut
                                 sectionAutoFocus
-                                radius={80}
-                                innerRadius={55}
-                                innerCircleColor={'black'}
+                                radius={70}
+                                innerRadius={50}
+                                innerCircleColor={'transparent'} // Transparent inner circle for glass effect
                                 centerLabelComponent={() => {
                                     return (
                                         <View className="justify-center items-center">
-                                            <Text className="text-3xl text-white font-black" style={{ fontFamily: 'Inter_900Black' }}>{totalSessions}</Text>
-                                            <Text className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest">Sessions</Text>
+                                            <Text className="text-3xl text-black dark:text-white font-black" style={{ fontFamily: 'Inter_700Bold' }}>{totalSessions}</Text>
                                         </View>
                                     );
                                 }}
                             />
-                            <View className="gap-4">
+                            <View className="gap-4 mr-2">
                                 <View className="flex-row items-center gap-3">
-                                    <View className="w-3 h-3 rounded-sm bg-red-500" />
-                                    <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wide">Deep Work</Text>
+                                    <View className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50" />
+                                    <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Deep Work</Text>
                                 </View>
                                 <View className="flex-row items-center gap-3">
-                                    <View className="w-3 h-3 rounded-sm bg-neutral-800" />
-                                    <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wide">Casual</Text>
+                                    <View className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-700" />
+                                    <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Casual</Text>
                                 </View>
                                 <View className="flex-row items-center gap-3">
-                                    <View className="w-3 h-3 rounded-sm bg-neutral-900" />
-                                    <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wide">Quick</Text>
+                                    <View className="w-3 h-3 rounded-full bg-neutral-200 dark:bg-neutral-800" />
+                                    <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Quick</Text>
                                 </View>
                             </View>
                         </View>
-                    </View>
+                    </GlassCard>
                 </View>
 
                 {/* Footer */}
                 <Text
-                    className="text-neutral-800 text-2xl font-black text-center mt-32 mb-32 tracking-tighter"
-                    style={{ fontFamily: 'Inter_900Black' }}
+                    className="text-neutral-400 dark:text-neutral-600 text-base font-semibold text-center mt-12 mb-8 tracking-wide"
+                // Removed extra bold font face for a slightly softer finish
                 >
-                    Keep turning pages,{"\n"}
-                    keep growing.
+                    Keep turning pages.
                 </Text>
             </ScrollView>
         </View>
