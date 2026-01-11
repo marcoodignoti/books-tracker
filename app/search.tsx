@@ -88,7 +88,16 @@ export default function SearchScreen() {
                         </Pressable>
                     )}
                 </View>
-                <Pressable onPress={handleClose} className="ml-3">
+                <Pressable
+                    onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push("/scan" as Href);
+                    }}
+                    className="ml-2 w-10 h-10 bg-neutral-900 rounded-xl items-center justify-center active:scale-90"
+                >
+                    <ScanLine size={20} color="#ffffff" />
+                </Pressable>
+                <Pressable onPress={handleClose} className="ml-2">
                     <Text className="text-base font-semibold text-neutral-900">Cancel</Text>
                 </Pressable>
             </View>

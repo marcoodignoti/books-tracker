@@ -4,15 +4,11 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
     BookOpen,
-    Check,
     ChevronLeft,
-    Cloud,
-    Coffee,
     Minus,
     Pause,
     Play,
     Plus,
-    VolumeX,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -26,22 +22,6 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-type Atmosphere = "rain" | "coffee" | "mute";
-
-interface AtmosphereOption {
-    id: Atmosphere;
-    label: string;
-    icon: React.ReactNode;
-}
-
-const ATMOSPHERE_OPTIONS: AtmosphereOption[] = [
-    { id: "rain", label: "Rain", icon: <Cloud size={28} color="#171717" /> },
-    { id: "coffee", label: "Café", icon: <Coffee size={28} color="#171717" /> },
-    { id: "mute", label: "Silence", icon: <VolumeX size={28} color="#171717" /> },
-];
 
 const DEFAULT_TIMER_MINUTES = 25;
 
@@ -59,8 +39,6 @@ export default function SessionScreen() {
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateProgress = useBookStore((state) => state.updateProgress);
 
-    const [phase, setPhase] = useState<"setup" | "timer">("setup");
-    const [selectedAtmosphere, setSelectedAtmosphere] = useState<Atmosphere>("mute");
     const [timerSeconds, setTimerSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -92,6 +70,7 @@ export default function SessionScreen() {
                     }
                     return prev - 1;
                 });
+                setElapsedSeconds((prev) => prev + 1);
             }, 1000);
         }
 
@@ -115,6 +94,14 @@ export default function SessionScreen() {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
+        // Save session if any time was spent reading
+        if (elapsedSeconds > 0 && book) {
+            addSession(book.id, {
+                startedAt: sessionStartRef.current,
+                duration: elapsedSeconds,
+                pagesRead: 0, // User can update page progress separately
+            });
+        }
         router.back();
     };
 
@@ -132,6 +119,10 @@ export default function SessionScreen() {
 
     const handlePlayPause = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (!isRunning && elapsedSeconds === 0) {
+            // Starting fresh session
+            sessionStartRef.current = Date.now();
+        }
         setIsRunning(!isRunning);
     };
 
@@ -188,99 +179,6 @@ export default function SessionScreen() {
         router.back();
     };
 
-    // Setup Phase - Atmosphere Selection
-    if (phase === "setup") {
-        return (
-            <View
-                className="flex-1 bg-white"
-                style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-            >
-                {/* Header */}
-                <View className="flex-row items-center px-4 py-4">
-                    <Pressable
-                        onPress={handleBack}
-                        className="w-10 h-10 bg-neutral-100 rounded-full items-center justify-center active:scale-90"
-                    >
-                        <ChevronLeft size={24} color="#171717" />
-                    </Pressable>
-                    <Text className="flex-1 text-center text-lg font-semibold text-neutral-900 mr-10">
-                        Session Setup
-                    </Text>
-                </View>
-
-                {/* Book Preview */}
-                <View className="items-center py-8">
-                    <View className="w-32 h-48 rounded-2xl overflow-hidden shadow-xl shadow-black/15">
-                        {book.coverUrl ? (
-                            <Image
-                                source={{ uri: book.coverUrl }}
-                                style={{ width: "100%", height: "100%" }}
-                                contentFit="cover"
-                            />
-                        ) : (
-                            <View className="w-full h-full bg-neutral-200 items-center justify-center">
-                                <BookOpen size={32} color="#a3a3a3" />
-                            </View>
-                        )}
-                    </View>
-                    <Text
-                        className="text-lg font-semibold text-neutral-900 mt-4 text-center px-8"
-                        numberOfLines={2}
-                    >
-                        {book.title}
-                    </Text>
-                </View>
-
-                {/* Atmosphere Selection */}
-                <View className="px-4 flex-1">
-                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">
-                        Choose Your Atmosphere
-                    </Text>
-
-                    <View className="flex-row gap-3">
-                        {ATMOSPHERE_OPTIONS.map((option) => {
-                            const isSelected = selectedAtmosphere === option.id;
-                            return (
-                                <Pressable
-                                    key={option.id}
-                                    onPress={() => handleSelectAtmosphere(option.id)}
-                                    className={`flex-1 aspect-square rounded-3xl items-center justify-center ${isSelected
-                                        ? "bg-white border-2 border-neutral-900"
-                                        : "bg-neutral-100 border-2 border-transparent"
-                                        } active:scale-95`}
-                                >
-                                    <View className="items-center">
-                                        {option.icon}
-                                        <Text className="text-sm font-semibold text-neutral-900 mt-2">
-                                            {option.label}
-                                        </Text>
-                                        {isSelected && (
-                                            <View className="absolute -top-1 -right-1 w-6 h-6 bg-neutral-900 rounded-full items-center justify-center">
-                                                <Check size={14} color="#ffffff" strokeWidth={3} />
-                                            </View>
-                                        )}
-                                    </View>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-                </View>
-
-                {/* Start Button */}
-                <View className="px-4 pb-4">
-                    <Pressable
-                        onPress={handleStartSession}
-                        className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-xl shadow-black/20"
-                    >
-                        <Play size={24} color="#ffffff" fill="#ffffff" />
-                        <Text className="text-lg font-bold text-white">Begin Session</Text>
-                    </Pressable>
-                </View>
-            </View>
-        );
-    }
-
-    // Timer Phase
     return (
         <View
             className="flex-1 bg-neutral-50"
@@ -294,10 +192,15 @@ export default function SessionScreen() {
                 >
                     <ChevronLeft size={24} color="#171717" />
                 </Pressable>
-                <View className="bg-white px-3 py-1.5 rounded-full shadow-md shadow-black/5">
-                    <Text className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                        {ATMOSPHERE_OPTIONS.find((a) => a.id === selectedAtmosphere)?.label}
+                <View className="items-center">
+                    <Text className="text-lg font-semibold text-neutral-900">
+                        Reading Session
                     </Text>
+                    {elapsedSeconds > 0 && (
+                        <Text className="text-xs text-neutral-500">
+                            {formatTime(elapsedSeconds)} elapsed
+                        </Text>
+                    )}
                 </View>
                 <Pressable
                     onPress={handleFinishSession}
