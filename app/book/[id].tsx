@@ -9,6 +9,9 @@ import { useState } from "react";
 import {
     Alert,
     Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
     Pressable,
     ScrollView,
     Text,
@@ -19,6 +22,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const COVER_HEIGHT = SCREEN_HEIGHT * 0.6;
 
+function formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+}
+
 export default function BookDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
@@ -26,7 +38,10 @@ export default function BookDetailScreen() {
 
     const book = useBookStore((state) => state.getBookById(id || ""));
     const updateStatus = useBookStore((state) => state.updateStatus);
+    const updateBook = useBookStore((state) => state.updateBook);
     const deleteBook = useBookStore((state) => state.deleteBook);
+    const addNote = useBookStore((state) => state.addNote);
+    const deleteNote = useBookStore((state) => state.deleteNote);
 
     const [showStatusOptions, setShowStatusOptions] = useState(false);
 
@@ -57,6 +72,19 @@ export default function BookDetailScreen() {
     const sortedSessions = [...(book.sessions || [])].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+
+    // Calculate statistics
+    const sessions = book.sessions || [];
+    const notes = book.notes || [];
+    const totalReadingTime = sessions.reduce((sum, s) => sum + s.duration, 0);
+    const totalPagesRead = sessions.reduce((sum, s) => sum + s.pagesRead, 0);
+    const avgPagesPerHour = totalReadingTime > 0
+        ? Math.round((totalPagesRead / totalReadingTime) * 3600)
+        : 0;
+    const pagesRemaining = book.totalPages - book.currentPage;
+    const estimatedTimeRemaining = avgPagesPerHour > 0
+        ? Math.round((pagesRemaining / avgPagesPerHour) * 3600)
+        : 0;
 
     const handleBack = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -99,6 +127,43 @@ export default function BookDetailScreen() {
                 },
             ]
         );
+    };
+
+    const handleAddNote = () => {
+        if (!noteContent.trim()) return;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const page = notePage ? parseInt(notePage, 10) : undefined;
+        addNote(book.id, { content: noteContent.trim(), page });
+        setNoteContent("");
+        setNotePage("");
+        setShowNoteModal(false);
+    };
+
+    const handleDeleteNote = (noteId: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        deleteNote(book.id, noteId);
+    };
+
+    const handleOpenEditModal = () => {
+        setEditTitle(book.title);
+        setEditAuthor(book.author);
+        setEditPages(book.totalPages.toString());
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = () => {
+        const pages = parseInt(editPages, 10);
+        if (editTitle.trim() && editAuthor.trim() && !isNaN(pages) && pages > 0) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            updateBook(book.id, {
+                title: editTitle.trim(),
+                author: editAuthor.trim(),
+                totalPages: pages,
+            });
+            setShowEditModal(false);
+        } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
     };
 
     return (

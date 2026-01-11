@@ -15,8 +15,15 @@ interface BookStore {
     updateProgress: (id: string, currentPage: number, sessionData?: SessionData) => void;
     updateStatus: (id: string, status: BookStatus) => void;
     deleteBook: (id: string) => void;
+    addSession: (bookId: string, session: Omit<ReadingSession, 'id'>) => void;
+    addNote: (bookId: string, note: Omit<Note, 'id' | 'createdAt'>) => void;
+    deleteNote: (bookId: string, noteId: string) => void;
     getBookById: (id: string) => Book | undefined;
     getCurrentlyReading: () => Book | undefined;
+}
+
+function generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 export const useBookStore = create<BookStore>()(
@@ -76,6 +83,51 @@ export const useBookStore = create<BookStore>()(
             deleteBook: (id) => {
                 set((state) => ({
                     books: state.books.filter((book) => book.id !== id),
+                }));
+            },
+
+            addSession: (bookId, session) => {
+                set((state) => ({
+                    books: state.books.map((book) =>
+                        book.id === bookId
+                            ? {
+                                ...book,
+                                sessions: [
+                                    ...(book.sessions || []),
+                                    { ...session, id: generateId() },
+                                ],
+                            }
+                            : book
+                    ),
+                }));
+            },
+
+            addNote: (bookId, note) => {
+                set((state) => ({
+                    books: state.books.map((book) =>
+                        book.id === bookId
+                            ? {
+                                ...book,
+                                notes: [
+                                    ...(book.notes || []),
+                                    { ...note, id: generateId(), createdAt: Date.now() },
+                                ],
+                            }
+                            : book
+                    ),
+                }));
+            },
+
+            deleteNote: (bookId, noteId) => {
+                set((state) => ({
+                    books: state.books.map((book) =>
+                        book.id === bookId
+                            ? {
+                                ...book,
+                                notes: (book.notes || []).filter((n) => n.id !== noteId),
+                            }
+                            : book
+                    ),
                 }));
             },
 
