@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { BookOpen, Check, ChevronLeft, Plus, X } from "lucide-react-native";
+import { BookOpen, Check, ChevronLeft, Plus, X, Zap, ZapOff } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -23,6 +23,7 @@ export default function ScanScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<GoogleBookVolume | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [torchEnabled, setTorchEnabled] = useState(false);
 
     const { books, addBook } = useBookStore();
 
@@ -66,6 +67,11 @@ export default function ScanScreen() {
         setScanned(false);
         setResult(null);
         setError(null);
+    };
+
+    const toggleTorch = () => {
+        Haptics.selectionAsync();
+        setTorchEnabled((prev) => !prev);
     };
 
     const isBookInLibrary = result ? books.some((book) => book.id === result.id) : false;
@@ -117,6 +123,7 @@ export default function ScanScreen() {
                 barcodeScannerSettings={{
                     barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
                 }}
+                enableTorch={torchEnabled}
                 onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
             />
 
@@ -133,7 +140,16 @@ export default function ScanScreen() {
                         <ChevronLeft size={24} color="#ffffff" />
                     </Pressable>
                     <Text className="text-white text-lg font-semibold">Scan ISBN</Text>
-                    <View className="w-10" />
+                    <Pressable
+                        onPress={toggleTorch}
+                        className="w-10 h-10 bg-black/50 rounded-full items-center justify-center active:scale-90"
+                    >
+                        {torchEnabled ? (
+                            <Zap size={24} color="#fbbf24" fill="#fbbf24" />
+                        ) : (
+                            <ZapOff size={24} color="#ffffff" />
+                        )}
+                    </Pressable>
                 </View>
             </View>
 
