@@ -1,3 +1,4 @@
+import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import { Book } from "@/types/book";
 import * as Haptics from "expo-haptics";
@@ -11,31 +12,46 @@ function EmptyState() {
     const router = useRouter();
 
     const handleAddBook = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         router.push("/search");
     };
 
     return (
-        <View className="flex-1 items-center justify-center px-8">
-            <View className="w-24 h-24 rounded-full bg-neutral-900 items-center justify-center mb-6">
-                <BookOpen size={40} color="#a3a3a3" strokeWidth={1.5} />
-            </View>
-            <Text
-                className="text-2xl font-black text-white text-center mb-2 tracking-tighter"
-                style={{ fontFamily: 'Inter_900Black' }}
+        <View className="flex-1 items-center justify-center px-6">
+            <GlassCard
+                intensity={40}
+                className="w-full rounded-[32px] border-white/10 overflow-hidden"
+                contentClassName="items-center py-12 px-8"
             >
-                Library is Empty
-            </Text>
-            <Text className="text-base text-neutral-500 text-center mb-8 font-medium">
-                Start building your collection by adding your first book
-            </Text>
-            <Pressable
-                onPress={handleAddBook}
-                className="bg-white px-8 py-4 rounded-full flex-row items-center gap-3 active:scale-95"
-            >
-                <Plus size={20} color="#000000" strokeWidth={2.5} />
-                <Text className="text-black font-bold text-base uppercase tracking-wider">Add Book</Text>
-            </Pressable>
+                <View className="w-20 h-20 rounded-2xl bg-white/5 items-center justify-center mb-8 border border-white/10">
+                    <BookOpen size={32} color="#737373" strokeWidth={1.5} />
+                </View>
+                <Text
+                    className="text-3xl font-black text-white text-center mb-3 tracking-tighter"
+                    style={{ fontFamily: 'Inter_900Black' }}
+                >
+                    Library is Empty
+                </Text>
+                <Text className="text-sm text-neutral-400 text-center mb-10 font-medium leading-relaxed px-4">
+                    Start building your personal collection by adding your first book.
+                </Text>
+
+                <Pressable
+                    onPress={handleAddBook}
+                    className="active:scale-[0.98] w-full"
+                >
+                    <GlassCard
+                        intensity={60}
+                        className="w-full h-14 rounded-full border-white/20"
+                        contentClassName="items-center justify-center flex-row gap-3 h-full w-full bg-white/10"
+                    >
+                        <Plus size={18} color="#ffffff" strokeWidth={3} />
+                        <Text className="text-white font-black text-xs uppercase tracking-widest">
+                            Add First Book
+                        </Text>
+                    </GlassCard>
+                </Pressable>
+            </GlassCard>
         </View>
     );
 }
@@ -49,7 +65,7 @@ function BookCard({ book, isHero }: BookCardProps) {
     const router = useRouter();
 
     const handlePress = () => {
-        Haptics.selectionAsync();
+        if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
         router.push(`/book/${book.id}`);
     };
 
@@ -59,10 +75,15 @@ function BookCard({ book, isHero }: BookCardProps) {
         return (
             <Pressable
                 onPress={handlePress}
-                className="bg-neutral-900 rounded-[32px] overflow-hidden mx-4 mb-8 active:scale-[0.98]"
+                className="mx-4 mb-8 active:scale-[0.98]"
             >
-                <View className="flex-row p-5">
-                    <View className="w-32 h-48 rounded-2xl overflow-hidden bg-neutral-800">
+                <GlassCard
+                    intensity={25}
+                    className="rounded-[24px] border-white/10 overflow-hidden"
+                    contentClassName="flex-row p-5"
+                >
+                    {/* Cover */}
+                    <View className="w-32 h-48 rounded-sm overflow-hidden bg-neutral-900 shadow-2xl shadow-black border border-white/10">
                         {book.coverUrl ? (
                             <Image
                                 source={{ uri: book.coverUrl }}
@@ -75,33 +96,46 @@ function BookCard({ book, isHero }: BookCardProps) {
                             </View>
                         )}
                     </View>
-                    <View className="flex-1 ml-5 justify-center">
-                        <View className="bg-red-600 self-start px-2 py-1 rounded-md mb-3">
-                            <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
-                                Reading Now
+
+                    {/* Info */}
+                    <View className="flex-1 ml-5 justify-between py-1">
+                        <View>
+                            {/* Glass Badge */}
+                            <GlassCard
+                                intensity={40}
+                                className="self-start rounded-full mb-3 border-white/10"
+                                contentClassName="px-3 py-1 bg-white/5"
+                            >
+                                <Text className="text-white text-[10px] font-bold uppercase tracking-widest">
+                                    Reading Now
+                                </Text>
+                            </GlassCard>
+
+                            <Text
+                                className="text-2xl font-black text-white mb-2 leading-tight tracking-tighter"
+                                numberOfLines={3}
+                                style={{ fontFamily: 'Inter_900Black' }}
+                            >
+                                {book.title}
+                            </Text>
+                            <Text className="text-sm text-neutral-400 font-medium" numberOfLines={1}>
+                                {book.author}
                             </Text>
                         </View>
-                        <Text
-                            className="text-2xl font-black text-white mb-1 leading-tight tracking-tighter"
-                            numberOfLines={2}
-                            style={{ fontFamily: 'Inter_900Black' }}
-                        >
-                            {book.title}
-                        </Text>
-                        <Text className="text-sm text-neutral-400 mb-6 font-medium" numberOfLines={1}>
-                            {book.author}
-                        </Text>
-                        <View className="h-1 bg-neutral-800 rounded-full overflow-hidden mb-2">
-                            <View
-                                className="h-full bg-white rounded-full"
-                                style={{ width: `${progress}%` }}
-                            />
+
+                        <View>
+                            <View className="h-1 bg-neutral-800/50 rounded-full overflow-hidden mb-2">
+                                <View
+                                    className="h-full bg-white rounded-full"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </View>
+                            <Text className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                                {Math.round(progress)}% Complete
+                            </Text>
                         </View>
-                        <Text className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
-                            {Math.round(progress)}% Complete
-                        </Text>
                     </View>
-                </View>
+                </GlassCard>
             </Pressable>
         );
     }
@@ -111,7 +145,7 @@ function BookCard({ book, isHero }: BookCardProps) {
             onPress={handlePress}
             className="w-32 mr-4 active:scale-95"
         >
-            <View className="w-32 h-48 rounded-xl overflow-hidden bg-neutral-900 mb-3">
+            <View className="w-32 h-48 rounded-sm overflow-hidden bg-neutral-900 mb-3 shadow-lg shadow-black/50 border border-white/5">
                 {book.coverUrl ? (
                     <Image
                         source={{ uri: book.coverUrl }}
@@ -125,8 +159,9 @@ function BookCard({ book, isHero }: BookCardProps) {
                 )}
             </View>
             <Text
-                className="text-sm font-bold text-white mb-1 leading-tight"
+                className="text-sm font-bold text-white mb-1 leading-tight tracking-tight"
                 numberOfLines={2}
+                style={{ fontFamily: 'Inter_700Bold' }}
             >
                 {book.title}
             </Text>
@@ -147,7 +182,7 @@ export default function LibraryScreen() {
     const finished = books.filter((b) => b.status === "finished");
 
     const handleAddBook = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         router.push("/search");
     };
 
@@ -168,13 +203,21 @@ export default function LibraryScreen() {
                         className="text-5xl font-black text-white tracking-tighter"
                         style={{ fontFamily: 'Inter_900Black' }}
                     >
-                        Index.
+                        Library
                     </Text>
+
+                    {/* Add Button - Floating Glass Circle */}
                     <Pressable
                         onPress={handleAddBook}
-                        className="w-12 h-12 bg-white rounded-full items-center justify-center active:scale-90 mb-2"
+                        className="active:scale-90 mb-2"
                     >
-                        <Plus size={24} color="#000000" strokeWidth={2.5} />
+                        <GlassCard
+                            intensity={40}
+                            className="w-12 h-12 rounded-full border-white/20"
+                            contentClassName="items-center justify-center h-full w-full bg-white/5"
+                        >
+                            <Plus size={24} color="#ffffff" strokeWidth={2.5} />
+                        </GlassCard>
                     </Pressable>
                 </View>
 
@@ -185,8 +228,8 @@ export default function LibraryScreen() {
 
                 {/* Additional Currently Reading Books */}
                 {currentlyReading.length > 1 && (
-                    <View className="mb-8">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
+                    <View className="mb-10">
+                        <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
                             Also Reading
                         </Text>
                         <ScrollView
@@ -203,8 +246,8 @@ export default function LibraryScreen() {
 
                 {/* Want to Read Section */}
                 {wantToRead.length > 0 && (
-                    <View className="mb-8">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
+                    <View className="mb-10">
+                        <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
                             Queue
                         </Text>
                         <ScrollView
@@ -221,8 +264,8 @@ export default function LibraryScreen() {
 
                 {/* Finished Section */}
                 {finished.length > 0 && (
-                    <View className="mb-8">
-                        <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
+                    <View className="mb-10">
+                        <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-6 mb-4">
                             Archive
                         </Text>
                         <ScrollView
@@ -237,7 +280,7 @@ export default function LibraryScreen() {
                     </View>
                 )}
 
-                <View style={{ height: insets.bottom + 20 }} />
+                <View style={{ height: insets.bottom + 100 }} />
             </ScrollView>
         </View>
     );

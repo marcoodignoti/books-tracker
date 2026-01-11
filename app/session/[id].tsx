@@ -1,3 +1,4 @@
+import { GlassCard } from "@/components/ui/GlassCard";
 import { useBookStore } from "@/store/useBookStore";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -55,21 +56,21 @@ export default function SessionScreen() {
             : 0;
     };
 
+    // Monitor timer completion separate from the interval tick to avoid side-effects in setState
+    useEffect(() => {
+        if (timerSeconds === 0 && isRunning) {
+            setIsRunning(false);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setElapsedSeconds(getElapsedSeconds());
+            setPageInput(book?.currentPage?.toString() || "0");
+            setShowCompletionModal(true);
+        }
+    }, [timerSeconds, isRunning, book?.currentPage]);
+
     useEffect(() => {
         if (isRunning && timerSeconds > 0) {
             timerRef.current = setInterval(() => {
-                setTimerSeconds((prev) => {
-                    if (prev <= 1) {
-                        setIsRunning(false);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        setElapsedSeconds(getElapsedSeconds());
-                        // Show completion modal when timer reaches 0
-                        setPageInput(book?.currentPage?.toString() || "0");
-                        setShowCompletionModal(true);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
+                setTimerSeconds((prev) => Math.max(0, prev - 1));
                 setElapsedSeconds((prev) => prev + 1);
             }, 1000);
         }
@@ -79,7 +80,7 @@ export default function SessionScreen() {
                 clearInterval(timerRef.current);
             }
         };
-    }, [isRunning, timerSeconds, book?.currentPage]);
+    }, [isRunning, timerSeconds]);
 
     if (!book) {
         return (
@@ -90,7 +91,7 @@ export default function SessionScreen() {
     }
 
     const handleBack = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
@@ -106,7 +107,7 @@ export default function SessionScreen() {
     };
 
     const handlePlayPause = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (!isRunning && elapsedSeconds === 0) {
             // Starting fresh session
             sessionStartTimeRef.current = Date.now();
@@ -115,17 +116,17 @@ export default function SessionScreen() {
     };
 
     const handleAddMinute = () => {
-        Haptics.selectionAsync();
+        if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
         setTimerSeconds((prev) => prev + 60);
     };
 
     const handleSubtractMinute = () => {
-        Haptics.selectionAsync();
+        if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync();
         setTimerSeconds((prev) => Math.max(60, prev - 60));
     };
 
     const handleFinishSession = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (process.env.EXPO_OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
@@ -143,13 +144,13 @@ export default function SessionScreen() {
 
         if (isNaN(newPage) || newPage < 0) {
             setInputError("Please enter a valid page number");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
         if (newPage > book.totalPages) {
             setInputError(`Page cannot exceed ${book.totalPages}`);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
@@ -164,7 +165,7 @@ export default function SessionScreen() {
         });
 
         updateProgress(book.id, newPage);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (process.env.EXPO_OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCompletionModal(false);
         router.back();
     };
@@ -175,32 +176,41 @@ export default function SessionScreen() {
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-6 py-4">
-                <Pressable
-                    onPress={handleBack}
-                    className="w-12 h-12 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
-                >
-                    <ChevronLeft size={24} color="#ffffff" />
+            <View className="flex-row items-center justify-between px-6 py-4 z-20">
+                {/* Floating Back Glass Button */}
+                <Pressable onPress={handleBack} className="active:scale-90">
+                    <GlassCard
+                        intensity={40}
+                        className="w-12 h-12 rounded-full border-white/20"
+                        contentClassName="items-center justify-center h-full w-full"
+                    >
+                        <ChevronLeft size={24} color="#ffffff" />
+                    </GlassCard>
                 </Pressable>
 
+                {/* Title Pill (Flat) */}
                 <View className="bg-neutral-900 px-4 py-2 rounded-full border border-neutral-800">
-                    <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                    <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                         Reading Session
                     </Text>
                 </View>
 
-                <Pressable
-                    onPress={handleFinishSession}
-                    className="bg-white px-6 py-3 rounded-full active:scale-95"
-                >
-                    <Text className="text-xs font-black uppercase tracking-wider text-black">Done</Text>
+                {/* Done Glass Pill */}
+                <Pressable onPress={handleFinishSession} className="active:scale-95">
+                    <GlassCard
+                        intensity={30}
+                        className="px-6 h-10 rounded-full border-white/20"
+                        contentClassName="items-center justify-center h-full w-full"
+                    >
+                        <Text className="text-xs font-black uppercase tracking-wider text-white">Done</Text>
+                    </GlassCard>
                 </Pressable>
             </View>
 
             {/* Content */}
             <View className="flex-1 items-center justify-center px-8">
                 {/* Book Cover (Small & Darkened) */}
-                <View className="w-32 h-48 rounded-2xl overflow-hidden bg-neutral-900 mb-12 opacity-80">
+                <View className="w-32 h-48 rounded-sm overflow-hidden bg-neutral-900 mb-16 opacity-60 border border-white/5 shadow-2xl shadow-black">
                     {book.coverUrl ? (
                         <Image
                             source={{ uri: book.coverUrl }}
@@ -214,91 +224,110 @@ export default function SessionScreen() {
                     )}
                 </View>
 
-                {/* Timer */}
-                <View className="mb-16 items-center">
+                {/* Timer - Hero Swiss Type */}
+                <View className="mb-20 items-center">
                     <Text
                         className="text-8xl font-black text-white tracking-tighter leading-none font-variant-numeric-tabular-nums"
-                        style={{ fontFamily: 'Inter_900Black' }}
+                        style={{ fontFamily: 'Inter_900Black', fontSize: 96 }}
                     >
                         {formatTime(timerSeconds)}
                     </Text>
                     {elapsedSeconds > 0 && (
-                        <Text className="text-neutral-500 font-medium mt-2 tracking-wide">
-                            {formatTime(elapsedSeconds)} ELAPSED
-                        </Text>
+                        <View className="mt-4 px-3 py-1 bg-neutral-900 rounded-sm">
+                            <Text className="text-neutral-500 font-bold text-xs tracking-widest uppercase">
+                                {formatTime(elapsedSeconds)} Elapsed
+                            </Text>
+                        </View>
                     )}
                 </View>
 
-                {/* Controls */}
-                <View className="flex-row items-center gap-8">
+                {/* Controls - Glass Center, Flat Sides */}
+                <View className="flex-row items-center gap-10">
+                    {/* Subtract Time */}
                     <Pressable
                         onPress={handleSubtractMinute}
                         className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Minus size={24} color="#ffffff" strokeWidth={2.5} />
+                        <Minus size={24} color="#737373" strokeWidth={2.5} />
                     </Pressable>
 
-                    <Pressable
-                        onPress={handlePlayPause}
-                        className="w-24 h-24 bg-white rounded-full items-center justify-center active:scale-95"
-                    >
-                        {isRunning ? (
-                            <Pause size={36} color="#000000" fill="#000000" />
-                        ) : (
-                            <Play size={36} color="#000000" fill="#000000" style={{ marginLeft: 4 }} />
-                        )}
+                    {/* Play/Pause - Floating Glass Circle */}
+                    <Pressable onPress={handlePlayPause} className="active:scale-95 shadow-2xl shadow-black/50">
+                        <GlassCard
+                            intensity={23}
+                            className="w-24 h-24 rounded-full border-white/20"
+                            contentClassName="items-center justify-center h-full w-full"
+                        >
+                            {isRunning ? (
+                                <Pause size={36} color="#ffffff" fill="#ffffff" />
+                            ) : (
+                                <Play size={36} color="#ffffff" fill="#ffffff" style={{ marginLeft: 4 }} />
+                            )}
+                        </GlassCard>
                     </Pressable>
 
+                    {/* Add Time */}
                     <Pressable
                         onPress={handleAddMinute}
                         className="w-16 h-16 bg-neutral-900 rounded-full items-center justify-center border border-neutral-800 active:scale-90"
                     >
-                        <Plus size={24} color="#ffffff" strokeWidth={2.5} />
+                        <Plus size={24} color="#737373" strokeWidth={2.5} />
                     </Pressable>
                 </View>
             </View>
 
             {/* Footer Book Info */}
-            <View className="items-center pb-8 opacity-50">
-                <Text className="text-sm font-bold text-white uppercase tracking-widest" numberOfLines={1}>
+            <View className="items-center pb-8 opacity-40">
+                <Text className="text-xs font-bold text-white uppercase tracking-widest" numberOfLines={1}>
                     {book.title}
                 </Text>
             </View>
 
-            {/* Session Complete Modal */}
+            {/* Session Complete Modal - Glass Overlay */}
             <Modal
                 visible={showCompletionModal}
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowCompletionModal(false)}
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    className="flex-1"
+                <GlassCard
+                    intensity={80}
+                    tint="dark"
+                    className="flex-1 w-full h-full"
+                    contentClassName="flex-1 justify-center items-center px-6 bg-black/40"
+                    borderRadius={0}
                 >
-                    <View className="flex-1 bg-black/90 justify-center items-center px-6">
-                        <View className="bg-neutral-900 w-full rounded-[32px] p-8 border border-neutral-800">
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        className="w-full"
+                    >
+                        {/* Modal Content - Floating Glass Card */}
+                        <GlassCard
+                            intensity={40}
+                            className="w-full rounded-[32px] border-white/10 overflow-hidden"
+                            contentClassName="p-8 items-center"
+                        >
                             {/* Header */}
                             <View className="items-center mb-8">
                                 <Text className="text-3xl font-black text-white text-center tracking-tighter mb-2" style={{ fontFamily: 'Inter_900Black' }}>
                                     Session Complete
                                 </Text>
-                                <Text className="text-neutral-400 text-center font-medium">
+                                <Text className="text-neutral-300 text-center font-medium">
                                     You read for <Text className="text-white font-bold">{Math.round(elapsedSeconds / 60)} minutes</Text>.
                                 </Text>
                             </View>
 
                             {/* Page Input */}
-                            <View className="mb-8">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4 text-center">
+                            <View className="mb-8 w-full">
+                                <Text className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 text-center">
                                     Current Page
                                 </Text>
                                 <View className="flex-row items-center justify-center">
                                     <TextInput
-                                        className="bg-black border border-neutral-800 rounded-2xl px-8 py-6 text-center text-4xl font-black text-white w-full"
+                                        className="bg-black/50 border border-white/10 rounded-2xl px-8 py-6 text-center text-5xl font-black text-white w-full"
                                         style={{ fontFamily: 'Inter_900Black' }}
                                         placeholder="0"
-                                        placeholderTextColor="#333"
+                                        placeholderTextColor="#525252"
                                         keyboardType="number-pad"
                                         value={pageInput}
                                         onChangeText={(text) => {
@@ -308,12 +337,12 @@ export default function SessionScreen() {
                                         autoFocus
                                     />
                                 </View>
-                                <Text className="text-sm text-neutral-500 text-center mt-3 font-medium">
+                                <Text className="text-xs text-neutral-500 text-center mt-3 font-bold uppercase tracking-wide">
                                     / {book.totalPages} pages
                                 </Text>
                                 {inputError ? (
-                                    <View className="bg-red-900/20 py-2 rounded-lg mt-3">
-                                        <Text className="text-sm text-red-500 text-center font-bold">
+                                    <View className="bg-red-500/10 py-2 rounded-lg mt-3 border border-red-500/20">
+                                        <Text className="text-xs text-red-500 text-center font-bold uppercase tracking-wide">
                                             {inputError}
                                         </Text>
                                     </View>
@@ -321,15 +350,22 @@ export default function SessionScreen() {
                             </View>
 
                             {/* Actions */}
-                            <View className="gap-3">
+                            <View className="gap-4 w-full">
                                 <Pressable
                                     onPress={handleUpdateProgress}
-                                    className="bg-white py-5 rounded-full items-center justify-center active:scale-[0.98]"
+                                    className="active:scale-[0.98]"
                                 >
-                                    <Text className="text-lg font-black text-black uppercase tracking-wide">
-                                        Update Progress
-                                    </Text>
+                                    <GlassCard
+                                        intensity={50}
+                                        className="w-full h-14 rounded-full border-white/20"
+                                        contentClassName="items-center justify-center w-full h-full bg-white/10"
+                                    >
+                                        <Text className="text-sm font-black text-white uppercase tracking-widest">
+                                            Update Progress
+                                        </Text>
+                                    </GlassCard>
                                 </Pressable>
+
                                 <Pressable
                                     onPress={() => {
                                         setShowCompletionModal(false);
@@ -337,14 +373,14 @@ export default function SessionScreen() {
                                     }}
                                     className="py-4 items-center justify-center active:opacity-70"
                                 >
-                                    <Text className="text-base font-bold text-neutral-500">
+                                    <Text className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
                                         Discard Session
                                     </Text>
                                 </Pressable>
                             </View>
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
+                        </GlassCard>
+                    </KeyboardAvoidingView>
+                </GlassCard>
             </Modal>
         </View>
     );

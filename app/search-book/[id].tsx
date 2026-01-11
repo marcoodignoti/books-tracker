@@ -188,12 +188,12 @@ export default function SearchBookPreviewScreen() {
             >
                 <Pressable
                     onPress={handleBack}
-                    className="overflow-hidden rounded-full active:scale-90"
+                    className="overflow-hidden rounded-xl active:scale-90"
                 >
                     <BlurView
                         intensity={50}
                         tint="dark"
-                        className="w-11 h-11 items-center justify-center"
+                        className="w-12 h-12 items-center justify-center border border-white/10"
                     >
                         <ChevronLeft size={24} color="#ffffff" />
                     </BlurView>
@@ -205,7 +205,11 @@ export default function SearchBookPreviewScreen() {
                 {/* Book Info Section */}
                 <View className="px-6 pb-6">
                     {/* Title */}
-                    <Text className="text-4xl font-bold text-white mb-2" numberOfLines={3}>
+                    <Text
+                        className="text-4xl font-black text-white mb-2 leading-tight tracking-tighter"
+                        numberOfLines={3}
+                        style={{ fontFamily: 'Inter_900Black' }}
+                    >
                         {volumeInfo.title}
                     </Text>
 
@@ -217,23 +221,23 @@ export default function SearchBookPreviewScreen() {
                     {/* Stats Row */}
                     <View className="flex-row items-center gap-4 mb-6 flex-wrap">
                         {volumeInfo.pageCount && (
-                            <View className="bg-white/10 px-4 py-2 rounded-full">
-                                <Text className="text-base font-semibold text-white">
+                            <View className="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-lg">
+                                <Text className="text-sm font-bold text-white uppercase tracking-wide">
                                     {volumeInfo.pageCount} Pages
                                 </Text>
                             </View>
                         )}
                         {volumeInfo.averageRating && (
-                            <View className="bg-white/10 px-4 py-2 rounded-full flex-row items-center gap-1">
-                                <Star size={16} color="#ffffff" fill="#ffffff" />
-                                <Text className="text-base font-semibold text-white">
+                            <View className="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-lg flex-row items-center gap-1">
+                                <Star size={14} color="#ffffff" fill="#ffffff" />
+                                <Text className="text-sm font-bold text-white uppercase tracking-wide">
                                     {volumeInfo.averageRating.toFixed(1)}
                                 </Text>
                             </View>
                         )}
                         {volumeInfo.categories && volumeInfo.categories.length > 0 && (
-                            <View className="bg-white/10 px-4 py-2 rounded-full">
-                                <Text className="text-base font-semibold text-white">
+                            <View className="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-lg">
+                                <Text className="text-sm font-bold text-white uppercase tracking-wide">
                                     {volumeInfo.categories[0]}
                                 </Text>
                             </View>
@@ -241,9 +245,9 @@ export default function SearchBookPreviewScreen() {
                     </View>
                 </View>
 
-                {/* Bottom Sheet Style White Container */}
+                {/* Bottom Sheet Style Content - Dark Mode */}
                 <View
-                    className="bg-white rounded-t-[32px] px-6 pt-6"
+                    className="bg-neutral-900 rounded-t-2xl px-6 pt-8 border-t border-neutral-800"
                     style={{
                         paddingBottom: insets.bottom + 16,
                         maxHeight: SCREEN_HEIGHT * 0.55,
@@ -252,11 +256,11 @@ export default function SearchBookPreviewScreen() {
                     <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
                         {/* Description */}
                         {volumeInfo.description && (
-                            <View className="mb-4">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                            <View className="mb-8">
+                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4">
                                     Description
                                 </Text>
-                                <Text className="text-base text-neutral-700 leading-6">
+                                <Text className="text-base text-neutral-300 leading-6 font-medium">
                                     {stripHtml(volumeInfo.description)}
                                 </Text>
                             </View>
@@ -264,19 +268,19 @@ export default function SearchBookPreviewScreen() {
 
                         {/* Publisher & Publication Date */}
                         {(volumeInfo.publisher || volumeInfo.publishedDate) && (
-                            <View className="mb-4">
-                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">
-                                    Publication Details
+                            <View className="mb-8">
+                                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4">
+                                    Details
                                 </Text>
                                 {volumeInfo.publisher && (
-                                    <Text className="text-base text-neutral-700 mb-1">
-                                        <Text className="font-semibold">Publisher:</Text>{" "}
+                                    <Text className="text-sm text-neutral-400 mb-1 font-medium">
+                                        <Text className="text-white font-bold">Publisher:</Text>{" "}
                                         {volumeInfo.publisher}
                                     </Text>
                                 )}
                                 {volumeInfo.publishedDate && (
-                                    <Text className="text-base text-neutral-700">
-                                        <Text className="font-semibold">Published:</Text>{" "}
+                                    <Text className="text-sm text-neutral-400 font-medium">
+                                        <Text className="text-white font-bold">Published:</Text>{" "}
                                         {volumeInfo.publishedDate}
                                     </Text>
                                 )}
@@ -285,19 +289,19 @@ export default function SearchBookPreviewScreen() {
 
                         {/* Add to Library Button or Already in Library */}
                         {inLibrary ? (
-                            <View className="bg-neutral-100 py-4 rounded-2xl flex-row items-center justify-center gap-3 mb-4">
-                                <Check size={22} color="#22c55e" strokeWidth={2.5} />
-                                <Text className="text-lg font-bold text-neutral-600">
-                                    Already in Library
+                            <View className="bg-neutral-800 py-5 rounded-2xl flex-row items-center justify-center gap-3 mb-4 border border-neutral-700">
+                                <Check size={22} color="#22c55e" strokeWidth={3} />
+                                <Text className="text-lg font-black text-neutral-400 uppercase tracking-wide">
+                                    In Library
                                 </Text>
                             </View>
                         ) : (
                             <Pressable
                                 onPress={handleAddBook}
-                                className="bg-neutral-900 py-4 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-black/20 mb-4"
+                                className="bg-white py-5 rounded-2xl flex-row items-center justify-center gap-3 active:scale-[0.98] mb-4"
                             >
-                                <Plus size={22} color="#ffffff" strokeWidth={2.5} />
-                                <Text className="text-lg font-bold text-white">
+                                <Plus size={22} color="#000000" strokeWidth={3} />
+                                <Text className="text-lg font-black text-black uppercase tracking-wide">
                                     Add to Library
                                 </Text>
                             </Pressable>
